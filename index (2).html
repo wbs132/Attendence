@@ -230,8 +230,9 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
       <button class="btn btn-secondary btn-sm" onclick="setQuickRange('last_6')">গত ৬ মাস</button>
     </div>
     <!-- Row 2: date range + action buttons -->
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <label>থেকে:</label>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <label style="color:var(--text2);font-size:.85rem">থেকে:</label>
+      <select id="rFromD" style="width:58px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 4px;font-family:'Hind Siliguri',sans-serif;font-size:.82rem"></select>
       <select id="rFromM">
         <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
         <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
@@ -242,7 +243,8 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
       </select>
       <select id="rFromY"></select>
       <span style="color:var(--text2)">→</span>
-      <label>পর্যন্ত:</label>
+      <label style="color:var(--text2);font-size:.85rem">পর্যন্ত:</label>
+      <select id="rToD" style="width:58px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 4px;font-family:'Hind Siliguri',sans-serif;font-size:.82rem"></select>
       <select id="rToM">
         <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
         <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
@@ -492,6 +494,7 @@ function empInactiveThisMonth(emp, y, m){
   return !!(allData[key]&&allData[key][emp]);
 }
 function toggleEmpMonth(emp, y, m){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key='inactive_'+dateKey(y,m,1).slice(0,7);
   if(!allData[key]) allData[key]={};
   const wasInactive=!!allData[key][emp];
@@ -536,12 +539,8 @@ function isHoliday(y,m,d){ return publicHolidays.has(dateKey(y,m,d)); }
 function isOffDay(y,m,d){ return isWE(y,m,d)||isHoliday(y,m,d); }
 
 function init(){
-  // Firebase থেকে লোড করুন, তারপর UI শুরু করুন
-  showToast('⏳ ডেটা লোড হচ্ছে...');
-  fbLoad(()=>{
-    initUI();
-    setTimeout(fbListen, 2000); // realtime sync চালু
-  });
+  // window.onload এ fbLoad করা হয় — এখানে শুধু initUI
+  initUI();
 }
 function initUI(){
   const ySel=document.getElementById('yearSel');
@@ -606,6 +605,7 @@ function renderGrid(){
 }
 
 function setDaily(idx,s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx]; todayStatus[emp]=s;
   if(!allData[currentDate]) allData[currentDate]={};
@@ -620,6 +620,7 @@ function setDaily(idx,s){
 }
 
 function setDailyOT(idx, val){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx];
   const h=parseFloat(val)||0;
@@ -648,6 +649,7 @@ function updateStats(){
 }
 
 function markAll(s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   employees.forEach((e,i)=>{todayStatus[e]=s;if(!allData[currentDate])allData[currentDate]={};allData[currentDate][e]=s;});
   renderGrid(); updateStats();
 }
@@ -750,6 +752,7 @@ function renderMonthly(){
 }
 
 function setMonthlyOT(emp,y,m,d,val,inp){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key=dateKey(y,m,d);
   const ohKey='oth_'+key;
   const h=parseFloat(val)||0;
@@ -763,6 +766,7 @@ function setMonthlyOT(emp,y,m,d,val,inp){
 }
 
 function setFriAbs(emp,y,m,d,btn){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
   const isAbs=allData[key][emp]==='অ';
@@ -776,6 +780,7 @@ function setFriAbs(emp,y,m,d,btn){
 // toggleOT removed — oth_ keys now used for all days
 
 function setCellM(emp,y,m,d,s,btn){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
@@ -825,6 +830,7 @@ function recalcRow(emp,y,m){
 
 // Fill entire month for ONE employee
 function fillEmpMonth(emp,y,m,s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const days=daysInMonth(y,m);
   let hasExisting=false;
   for(let d=1;d<=days;d++){
@@ -845,6 +851,7 @@ function fillEmpMonth(emp,y,m,s){
 }
 
 function clearEmpMonth(emp,y,m){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const days=daysInMonth(y,m);
   for(let d=1;d<=days;d++){
     const key=dateKey(y,m,d);
@@ -861,6 +868,7 @@ function clearEmpMonth(emp,y,m){
 
 // Fill entire month for ALL employees
 function clearAllMonth(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const m=parseInt(document.getElementById('monthSel').value);
   const y=parseInt(document.getElementById('yearSel').value);
   if(!confirm(`⚠️ ${BN_MONTHS_FULL[m-1]} ${y} — সবার ডেটা মুছে যাবে। নিশ্চিত?`)) return;
@@ -878,6 +886,7 @@ function clearAllMonth(){
 }
 
 function fillMonthAll(s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const m=parseInt(document.getElementById('monthSel').value);
   const y=parseInt(document.getElementById('yearSel').value);
   if(!confirm(`⚠️ ${BN_MONTHS_FULL[m-1]} ${y} — সবার জন্য পুরো মাস পূরণ হবে। বিদ্যমান ডেটা মুছে যাবে। নিশ্চিত?`)) return;
@@ -894,6 +903,7 @@ function fillMonthAll(s){
 
 // ── SAVE / CSV ──
 function openAnnounceModal(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const m=parseInt(document.getElementById('monthSel').value);
   const y=parseInt(document.getElementById('yearSel').value);
   const days=daysInMonth(y,m);
@@ -927,6 +937,7 @@ function openAnnounceModal(){
 function closeAnnounceModal(){ document.getElementById('announceModal').classList.remove('show'); }
 
 function applyAnnounce(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const selected=[...document.querySelectorAll('#announceCalendar button[data-selected="1"]')].map(b=>b.dataset.key);
   // Remove old holidays from this month then add new ones
   const m=parseInt(document.getElementById('monthSel').value);
@@ -960,6 +971,7 @@ function updateAnnounceBar(){
 }
 
 function clearAnnounce(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const m=parseInt(document.getElementById('monthSel').value);
   const y=parseInt(document.getElementById('yearSel').value);
   const days=daysInMonth(y,m);
@@ -985,6 +997,7 @@ function backupData(){
 }
 
 function restoreData(input){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=function(e){
@@ -1014,6 +1027,7 @@ function restoreData(input){
 }
 
 function saveAll(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(currentDate){
     if(!allData[currentDate]) allData[currentDate]={};
     Object.assign(allData[currentDate],todayStatus);
@@ -1042,6 +1056,7 @@ function exportCSV(){
 
 // ── MODAL ──
 function openManageModal(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   renderEmpMetaList();
   document.getElementById('manageModal').classList.add('show');
 }
@@ -1069,6 +1084,7 @@ function renderEmpMetaList(){
   });
 }
 function addPeriod(i){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!empMeta[i].periods) empMeta[i].periods=[];
   empMeta[i].periods.push({from:'',to:''});
   renderEmpMetaList();
@@ -1081,25 +1097,30 @@ function updatePeriod(i,pi,field,val){
   empMeta[i].periods[pi][field]=val;
 }
 function updateEmpField(inp){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const i=parseInt(inp.dataset.i), f=inp.dataset.f;
   empMeta[i][f]=inp.value.trim();
 }
 function toggleEmpActive(i){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   empMeta[i].active=!empMeta[i].active;
   renderEmpMetaList();
 }
 function addNewEmpRow(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   // আনলিমিটেড কর্মচারী
   empMeta.push({name:'নতুন কর্মচারী',active:true,periods:[]});
   renderEmpMetaList();
   const c=document.getElementById('empMetaList'); c.scrollTop=c.scrollHeight;
 }
 function openHolidayModal(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   document.getElementById('holidayInput').value=[...publicHolidays].sort().join('\n');
   document.getElementById('holidayModal').classList.add('show');
 }
 function closeHolidayModal(){document.getElementById('holidayModal').classList.remove('show');}
 function saveHolidays(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const lines=document.getElementById('holidayInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>/^\d{4}-\d{2}-\d{2}$/.test(l));
   publicHolidays=new Set(lines);
   localStorage.setItem('att_holidays',JSON.stringify(lines));
@@ -1110,6 +1131,7 @@ function saveHolidays(){
 }
 function closeModal(){document.getElementById('manageModal').classList.remove('show');}
 function saveEmployees(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   // collect any unsaved input changes
   document.querySelectorAll('#empMetaList input').forEach(inp=>{ if(inp.dataset.i) empMeta[parseInt(inp.dataset.i)][inp.dataset.f]=inp.value.trim(); });
   empMeta=empMeta.filter(e=>e.name.trim());
@@ -1146,15 +1168,48 @@ function showToast(msg){
 // ── REPORT ──
 const BN_MONTHS_FULL = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 
+function populateDays(selId, monthSelId, yearSelId, defaultDay){
+  const m=+document.getElementById(monthSelId).value;
+  const y=+document.getElementById(yearSelId).value||new Date().getFullYear();
+  const days=daysInMonth(y,m);
+  const sel=document.getElementById(selId);
+  const prev=sel.value||defaultDay;
+  sel.innerHTML='';
+  for(let d=1;d<=days;d++){
+    const o=document.createElement('option');
+    o.value=d; o.textContent=d;
+    if(d===+prev||(!sel.value&&d===defaultDay)) o.selected=true;
+    sel.appendChild(o);
+  }
+}
 function initReportSelects(){
-  const y = new Date().getFullYear();
+  const now=new Date();
+  const y=now.getFullYear(), m=now.getMonth()+1;
+  // বছর dropdown
   ['rFromY','rToY'].forEach(id=>{
     const sel=document.getElementById(id); sel.innerHTML='';
-    for(let i=2024;i<=2030;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===y)o.selected=true;sel.appendChild(o);}
+    for(let i=2024;i<=2030;i++){
+      const o=document.createElement('option');o.value=i;o.textContent=i;
+      if(i===y)o.selected=true; sel.appendChild(o);
+    }
   });
-  document.getElementById('rFromM').value = new Date().getMonth()+1;
-  document.getElementById('rToM').value   = new Date().getMonth()+1;
-  // Populate employee selector
+  document.getElementById('rFromM').value=m;
+  document.getElementById('rToM').value=m;
+  // দিন dropdown — থেকে: ১ম দিন, পর্যন্ত: শেষ দিন
+  populateDays('rFromD','rFromM','rFromY',1);
+  populateDays('rToD','rToM','rToY',daysInMonth(y,m));
+  // মাস/বছর পরিবর্তনে দিন আপডেট
+  ['rFromM','rFromY'].forEach(id=>{
+    document.getElementById(id).onchange=()=>populateDays('rFromD','rFromM','rFromY',1);
+  });
+  ['rToM','rToY'].forEach(id=>{
+    document.getElementById(id).onchange=()=>{
+      const tm=+document.getElementById('rToM').value;
+      const ty=+document.getElementById('rToY').value;
+      populateDays('rToD','rToM','rToY',daysInMonth(ty,tm));
+    };
+  });
+  // কর্মচারী selector
   const empSel=document.getElementById('rEmpSel');
   const prev=empSel.value;
   empSel.innerHTML='<option value="__all__">— সবাই —</option>';
@@ -1166,58 +1221,81 @@ function initReportSelects(){
 }
 
 function getDateRange(){
-  const fy=+document.getElementById('rFromY').value, fm=+document.getElementById('rFromM').value;
-  const ty=+document.getElementById('rToY').value,   tm=+document.getElementById('rToM').value;
+  const fy=+document.getElementById('rFromY').value;
+  const fm=+document.getElementById('rFromM').value;
+  const fd=+document.getElementById('rFromD').value;
+  const ty=+document.getElementById('rToY').value;
+  const tm=+document.getElementById('rToM').value;
+  const td=+document.getElementById('rToD').value;
+  const fromStr=dateKey(fy,fm,fd), toStr=dateKey(ty,tm,td);
+  if(fromStr>toStr){showToast('⚠️ শুরু তারিখ শেষ তারিখের আগে হতে হবে');return null;}
+  // কর্মদিবস array
   const dates=[];
   let cy=fy,cm=fm;
   while(cy<ty||(cy===ty&&cm<=tm)){
-    const days=daysInMonth(cy,cm);
-    for(let d=1;d<=days;d++){
+    const startD=(cy===fy&&cm===fm)?fd:1;
+    const endD=(cy===ty&&cm===tm)?td:daysInMonth(cy,cm);
+    for(let d=startD;d<=endD;d++){
       if(!isOffDay(cy,cm,d)) dates.push(dateKey(cy,cm,d));
     }
     cm++; if(cm>12){cm=1;cy++;}
   }
-  return {dates, fromLabel:`${BN_MONTHS_FULL[fm-1]} ${fy}`, toLabel:`${BN_MONTHS_FULL[tm-1]} ${ty}`, fy,fm,ty,tm};
+  // মাস array
+  const months=[];
+  let my=fy,mm=fm;
+  while(my<ty||(my===ty&&mm<=tm)){
+    months.push({y:my,m:mm});
+    mm++; if(mm>12){mm=1;my++;}
+  }
+  const fromLabel=`${fd} ${BN_MONTHS_FULL[fm-1]} ${fy}`;
+  const toLabel=`${td} ${BN_MONTHS_FULL[tm-1]} ${ty}`;
+  return {dates,months,fromLabel,toLabel,fy,fm,fd,ty,tm,td};
 }
 
 function setQuickRange(type){
   const now=new Date();
   const cy=now.getFullYear(), cm=now.getMonth()+1;
-  let fy,fm,ty,tm;
-  if(type==='this_month'){fy=cy;fm=cm;ty=cy;tm=cm;}
-  else if(type==='last_month'){
+  let fy,fm,fd,ty,tm,td;
+  if(type==='this_month'){
+    fy=cy;fm=cm;fd=1;ty=cy;tm=cm;td=daysInMonth(cy,cm);
+  } else if(type==='last_month'){
     const d=new Date(cy,cm-2,1);
-    fy=fm=ty=tm=0;
-    fy=d.getFullYear();fm=d.getMonth()+1;ty=fy;tm=fm;
-  }
-  else if(type==='this_year'){fy=cy;fm=1;ty=cy;tm=12;}
-  else if(type==='last_3'){
+    fy=d.getFullYear();fm=d.getMonth()+1;fd=1;
+    ty=fy;tm=fm;td=daysInMonth(fy,fm);
+  } else if(type==='this_year'){
+    fy=cy;fm=1;fd=1;ty=cy;tm=12;td=31;
+  } else if(type==='last_3'){
     const d=new Date(cy,cm-3,1);
-    fy=d.getFullYear();fm=d.getMonth()+1;ty=cy;tm=cm;
-  }
-  else if(type==='last_6'){
+    fy=d.getFullYear();fm=d.getMonth()+1;fd=1;
+    ty=cy;tm=cm;td=daysInMonth(cy,cm);
+  } else if(type==='last_6'){
     const d=new Date(cy,cm-6,1);
-    fy=d.getFullYear();fm=d.getMonth()+1;ty=cy;tm=cm;
+    fy=d.getFullYear();fm=d.getMonth()+1;fd=1;
+    ty=cy;tm=cm;td=daysInMonth(cy,cm);
   }
   document.getElementById('rFromY').value=fy;
   document.getElementById('rFromM').value=fm;
   document.getElementById('rToY').value=ty;
   document.getElementById('rToM').value=tm;
+  populateDays('rFromD','rFromM','rFromY',fd);
+  populateDays('rToD','rToM','rToY',td);
+  document.getElementById('rFromD').value=fd;
+  document.getElementById('rToD').value=td;
   genReport();
 }
 
 function genReport(){
   try{
-  const {dates,fromLabel,toLabel,fy,fm,ty,tm}=getDateRange();
+  const range=getDateRange();
+  if(!range) return;
+  const {dates,months,fromLabel,toLabel,fy,fm,fd,ty,tm,td}=range;
   if(!dates.length){showToast('⚠️ তারিখ পরিসর ঠিক করুন');return;}
 
   const empSelVal=document.getElementById('rEmpSel').value;
   const filteredEmps = empSelVal==='__all__' ? employees : [employees[+empSelVal]];
   const isSingle = filteredEmps.length===1;
 
-  // Monthly breakdown per employee
-  const months=[];
-  {let cy=fy,cm=fm; while(cy<ty||(cy===ty&&cm<=tm)){months.push({y:cy,m:cm});cm++;if(cm>12){cm=1;cy++;}}}
+  // months — getDateRange() থেকে আসে
 
   // Per-employee totals
   const empStats = filteredEmps.map(emp=>{
@@ -1526,10 +1604,19 @@ function checkAuth(){
 }
 
 window.onload=function(){
-  // hide overlay initially, check after init
   document.getElementById('loginOverlay').style.display='none';
-  init();
-  checkAuth();
+  
+  // আগেই session check করে body class লাগাও (toolbar render হওয়ার আগেই)
+  const sess=sessionStorage.getItem('att_session');
+  if(sess==='viewer') document.body.classList.add('viewer-mode');
+  
+  // Firebase থেকে লোড + UI init
+  fbLoad(()=>{
+    initUI();
+    setTimeout(fbListen, 2000);
+    // init শেষে auth UI apply করো (toolbar এখন আছে)
+    checkAuth();
+  });
 };
 </script>
 <!-- Firebase scripts loaded last so DOM is ready -->
