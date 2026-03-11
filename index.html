@@ -137,9 +137,6 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
 .mbt td{padding:6px 10px;border:1px solid var(--border);text-align:center;background:var(--surface);}
 .mbt td:first-child{text-align:left;font-weight:500;}
 </style>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -147,13 +144,13 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
   <h1>📋 উপস্থিতি রেজিস্টার</h1>
   <div class="actions">
     <span id="fbStatus" style="font-size:.75rem;padding:4px 10px;border-radius:8px;background:var(--surface2);color:#f43f5e">🔴 অফলাইন</span>
-    <button class="btn btn-secondary" onclick="openManageModal()">✏️ নাম সম্পাদনা</button>
-    <button class="btn btn-secondary" onclick="openHolidayModal()">🎌 ছুটির তালিকা</button>
+    <button class="btn btn-secondary edit-only" onclick="openManageModal()">✏️ নাম সম্পাদনা</button>
+    <button class="btn btn-secondary edit-only" onclick="openHolidayModal()">🎌 ছুটির তালিকা</button>
     <button class="btn btn-blue" onclick="exportCSV()">📥 CSV ডাউনলোড</button>
     <button class="btn btn-secondary" onclick="backupData()" title="সব ডেটা JSON ফাইলে ডাউনলোড করুন">⬇️ ব্যাকআপ</button>
     <button class="btn btn-secondary" onclick="document.getElementById('restoreInput').click()" title="আগের ব্যাকআপ ফাইল লোড করুন">⬆️ রিস্টোর</button>
     <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(this)">
-    <button class="btn btn-primary" onclick="saveAll()">💾 সংরক্ষণ</button>
+    <button class="btn btn-primary edit-only" onclick="saveAll()">💾 সংরক্ষণ</button>
   </div>
 </div>
 
@@ -305,6 +302,67 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
 <div class="toast" id="toast"></div>
 
 <script>
+// ── Password & Mode System ──
+const EDIT_PASSWORD = 'admin1234'; // এখানে পাসওয়ার্ড পরিবর্তন করুন
+let isEditMode = false;
+
+function tryLogin(){
+  const pw = document.getElementById('pwInput').value;
+  if(pw === EDIT_PASSWORD){
+    isEditMode = true;
+    localStorage.setItem('att_edit_mode','1');
+    hideLoginOverlay();
+    applyMode();
+    showToast('✅ সম্পাদনা মোড চালু');
+  } else {
+    document.getElementById('pwErr').textContent = '❌ পাসওয়ার্ড ভুল';
+    document.getElementById('pwInput').value='';
+  }
+}
+
+function viewMode(){
+  isEditMode = false;
+  localStorage.removeItem('att_edit_mode');
+  hideLoginOverlay();
+  applyMode();
+}
+
+function lockApp(){
+  isEditMode = false;
+  localStorage.removeItem('att_edit_mode');
+  applyMode();
+  showLoginOverlay();
+}
+
+function showLoginOverlay(){
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwErr').textContent='';
+  setTimeout(()=>document.getElementById('pwInput').focus(),100);
+}
+
+function hideLoginOverlay(){
+  document.getElementById('loginOverlay').style.display='none';
+}
+
+function applyMode(){
+  const editBadge=document.getElementById('editBadge');
+  const viewBadge=document.getElementById('viewBadge');
+  if(isEditMode){
+    editBadge.style.display='block';
+    viewBadge.style.display='none';
+    // সব বাটন ও ইনপুট সক্রিয়
+    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='');
+    document.body.classList.remove('view-only-mode');
+  } else {
+    editBadge.style.display='none';
+    viewBadge.style.display='block';
+    // সব বাটন ও ইনপুট নিষ্ক্রিয়
+    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='none');
+    document.body.classList.add('view-only-mode');
+  }
+}
+
 // ── Firebase Config ──
 const firebaseConfig = {
   apiKey: "AIzaSyCd54-DLnDCSy2AtGZrsEwMO21efSefsMU",
@@ -320,23 +378,23 @@ let db = null;
 let fbConnected = false;
 let fbSaveTimer = null;
 
-try {
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.database();
-
-  // Connection status
-  db.ref('.info/connected').on('value', snap => {
-    fbConnected = !!snap.val();
+function initFirebase(){
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    db.ref('.info/connected').on('value', snap => {
+      fbConnected = !!snap.val();
+      const el = document.getElementById('fbStatus');
+      if(el){
+        el.textContent = fbConnected ? '🟢 অনলাইন' : '🔴 অফলাইন';
+        el.style.color = fbConnected ? '#00c9a7' : '#f43f5e';
+      }
+    });
+  } catch(e) {
+    console.warn('Firebase init failed:', e);
     const el = document.getElementById('fbStatus');
-    if(el){
-      el.textContent = fbConnected ? '🟢 অনলাইন' : '🔴 অফলাইন';
-      el.style.color = fbConnected ? '#00c9a7' : '#f43f5e';
-    }
-  });
-} catch(e) {
-  console.warn('Firebase init failed:', e);
-  const el = document.getElementById('fbStatus');
-  if(el){ el.textContent='⚫ অফলাইন মোড'; el.style.color='#888'; }
+    if(el){ el.textContent='⚫ অফলাইন মোড'; el.style.color='#888'; }
+  }
 }
 
 // Save all data to Firebase (debounced)
@@ -478,12 +536,8 @@ function isHoliday(y,m,d){ return publicHolidays.has(dateKey(y,m,d)); }
 function isOffDay(y,m,d){ return isWE(y,m,d)||isHoliday(y,m,d); }
 
 function init(){
-  // Firebase থেকে লোড করুন, তারপর UI শুরু করুন
-  showToast('⏳ ডেটা লোড হচ্ছে...');
-  fbLoad(()=>{
-    initUI();
-    setTimeout(fbListen, 2000); // realtime sync চালু
-  });
+  // window.onload এ fbLoad করা হয় — এখানে শুধু initUI
+  initUI();
 }
 function initUI(){
   const ySel=document.getElementById('yearSel');
@@ -494,6 +548,15 @@ function initUI(){
   currentDate=getToday();
   loadDailyDate();
   setInterval(saveAll, 30000);
+  // পাসওয়ার্ড মোড চেক
+  if(localStorage.getItem('att_edit_mode')==='1'){
+    isEditMode=true;
+    hideLoginOverlay();
+    applyMode();
+  } else {
+    showLoginOverlay();
+    applyMode();
+  }
 }
 
 function switchTab(t){
@@ -539,6 +602,7 @@ function renderGrid(){
 }
 
 function setDaily(idx,s){
+  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx]; todayStatus[emp]=s;
   if(!allData[currentDate]) allData[currentDate]={};
   allData[currentDate][emp]=s;
@@ -552,6 +616,7 @@ function setDaily(idx,s){
 }
 
 function setDailyOT(idx, val){
+  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx];
   const h=parseFloat(val)||0;
   if(h>0){ todayOT[emp]=h; } else { delete todayOT[emp]; }
@@ -707,6 +772,7 @@ function setFriAbs(emp,y,m,d,btn){
 // toggleOT removed — oth_ keys now used for all days
 
 function setCellM(emp,y,m,d,s,btn){
+  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
   allData[key][emp]=s;
@@ -1365,7 +1431,150 @@ function exportReportCSV(){
   showToast('📥 রিপোর্ট CSV ডাউনলোড হচ্ছে...');
 }
 
-window.onload=init;
+// ── AUTH ──
+const DEFAULT_ADMIN_PW = 'admin1234';
+let isAdmin = false;
+
+function getAdminPw(){
+  return localStorage.getItem('att_admin_pw') || DEFAULT_ADMIN_PW;
+}
+function tryLogin(){
+  const pw = document.getElementById('pwInput').value;
+  if(pw === getAdminPw()){
+    isAdmin = true;
+    sessionStorage.setItem('att_session','admin');
+    document.getElementById('loginOverlay').style.display='none';
+    applyAuthUI();
+    document.getElementById('pwError').textContent='';
+  } else {
+    document.getElementById('pwError').textContent='❌ পাসওয়ার্ড ভুল!';
+    document.getElementById('pwInput').value='';
+  }
+}
+function enterViewer(){
+  isAdmin = false;
+  sessionStorage.setItem('att_session','viewer');
+  document.getElementById('loginOverlay').style.display='none';
+  applyAuthUI();
+}
+function applyAuthUI(){
+  const toolbar=document.querySelector('.toolbar');
+  if(!isAdmin){
+    // CSS দিয়ে পুরো অ্যাপ read-only
+    document.body.classList.add('viewer-mode');
+    // Viewer badge
+    if(!document.getElementById('viewerBadge')){
+      const badge=document.createElement('span');
+      badge.id='viewerBadge';
+      badge.textContent='👁️ Viewer Mode';
+      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid #fbbf24;border-radius:8px;';
+      toolbar.prepend(badge);
+    }
+    // Logout button (always clickable)
+    if(!document.getElementById('logoutBtn')){
+      const lb=document.createElement('button');
+      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
+      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
+      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
+      toolbar.prepend(lb);
+    }
+  } else {
+    document.body.classList.remove('viewer-mode');
+    // Admin badge
+    if(!document.getElementById('adminBadge')){
+      const badge=document.createElement('span');
+      badge.id='adminBadge';
+      badge.textContent='🔐 Admin';
+      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:8px;cursor:pointer';
+      badge.title='পাসওয়ার্ড পরিবর্তন করুন';
+      badge.onclick=()=>document.getElementById('changePwModal').classList.add('show');
+      toolbar.prepend(badge);
+    }
+    // Logout button
+    if(!document.getElementById('logoutBtn')){
+      const lb=document.createElement('button');
+      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
+      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
+      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
+      toolbar.prepend(lb);
+    }
+  }
+}
+function doChangePw(){
+  const old=document.getElementById('oldPw').value;
+  const n1=document.getElementById('newPw').value;
+  const n2=document.getElementById('newPw2').value;
+  const err=document.getElementById('pwChangeErr');
+  if(old!==getAdminPw()){err.textContent='❌ পুরনো পাসওয়ার্ড ভুল';return;}
+  if(n1.length<4){err.textContent='❌ কমপক্ষে ৪ অক্ষর দিন';return;}
+  if(n1!==n2){err.textContent='❌ নতুন পাসওয়ার্ড মিলছে না';return;}
+  localStorage.setItem('att_admin_pw',n1);
+  document.getElementById('changePwModal').classList.remove('show');
+  ['oldPw','newPw','newPw2'].forEach(id=>document.getElementById(id).value='');
+  err.textContent='';
+  showToast('✅ পাসওয়ার্ড পরিবর্তন হয়েছে');
+}
+function checkAuth(){
+  const sess=sessionStorage.getItem('att_session');
+  if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
+  else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
+  else{document.getElementById('loginOverlay').style.display='flex';}
+}
+
+window.onload=function(){
+  document.getElementById('loginOverlay').style.display='none';
+  
+  // আগেই session check করে body class লাগাও (toolbar render হওয়ার আগেই)
+  const sess=sessionStorage.getItem('att_session');
+  if(sess==='viewer') document.body.classList.add('viewer-mode');
+  
+  // Firebase থেকে লোড + UI init
+  fbLoad(()=>{
+    initUI();
+    setTimeout(fbListen, 2000);
+    // init শেষে auth UI apply করো (toolbar এখন আছে)
+    checkAuth();
+  });
+};
 </script>
+<!-- Firebase scripts loaded last so DOM is ready -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  // Firebase scripts loaded — now safe to init
+  initFirebase();
+</script>
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="background:#162032;border:1px solid #2a3f5a;border-radius:16px;padding:36px 40px;min-width:300px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:8px">🔐</div>
+    <h2 style="color:#e2e8f0;font-size:1.1rem;margin-bottom:4px;font-family:'Hind Siliguri',sans-serif">উপস্থিতি রেজিস্টার</h2>
+    <p style="color:#8ba3bf;font-size:.8rem;margin-bottom:20px;font-family:'Hind Siliguri',sans-serif">Admin পাসওয়ার্ড দিন অথবা Viewer হিসেবে প্রবেশ করুন</p>
+    <input type="password" id="pwInput" placeholder="পাসওয়ার্ড লিখুন..." 
+      style="width:100%;padding:10px 14px;background:#0f1923;border:1px solid #2a3f5a;border-radius:8px;color:#e2e8f0;font-family:'Hind Siliguri',sans-serif;font-size:.9rem;box-sizing:border-box;margin-bottom:12px;outline:none"
+      onkeydown="if(event.key==='Enter') tryLogin()">
+    <div id="pwError" style="color:#f43f5e;font-size:.78rem;margin-bottom:10px;min-height:18px;font-family:'Hind Siliguri',sans-serif"></div>
+    <button onclick="tryLogin()" style="width:100%;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.9rem;font-weight:700;margin-bottom:10px">🔓 Admin লগইন</button>
+    <button onclick="enterViewer()" style="width:100%;padding:10px;background:#1e2d42;color:#8ba3bf;border:1px solid #2a3f5a;border-radius:8px;cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.85rem">👁️ শুধু দেখব (Viewer)</button>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="overlay" id="changePwModal">
+  <div class="modal" style="max-width:380px">
+    <h3>🔑 পাসওয়ার্ড পরিবর্তন</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <input type="password" id="oldPw" placeholder="পুরনো পাসওয়ার্ড" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem">
+      <input type="password" id="newPw" placeholder="নতুন পাসওয়ার্ড" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem">
+      <input type="password" id="newPw2" placeholder="নতুন পাসওয়ার্ড আবার" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem">
+      <div id="pwChangeErr" style="color:#f43f5e;font-size:.78rem;min-height:16px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('changePwModal').classList.remove('show')">বাতিল</button>
+      <button class="btn btn-primary" onclick="doChangePw()">✅ পরিবর্তন করুন</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
