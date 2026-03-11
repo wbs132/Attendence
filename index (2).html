@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>উপস্থিতি রেজিস্টার</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#0f1923; --surface:#162032; --surface2:#1e2d42; --border:#2a3f5a;
+  --accent:#00c9a7; --accent2:#3b82f6; --danger:#f43f5e; --warning:#f59e0b;
+  --text:#e2eaf4; --text2:#8ba3bf;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:10px;flex-wrap:wrap;}
+.topbar h1{font-size:1.1rem;font-weight:700;color:var(--accent);}
+.actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;}
+.tab{padding:12px 20px;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;transition:all .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.82rem;font-weight:600;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#0f1923;}
+.btn-primary:hover{background:#00b896;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--border);}
+.btn-blue{background:var(--accent2);color:#fff;}
+.btn-blue:hover{background:#2563eb;}
+.btn-sm{padding:5px 12px;font-size:.78rem;}
+
+.panel{display:none;padding:20px;}
+.panel.active{display:block;}
+
+/* DAILY */
+.date-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.date-bar label{color:var(--text2);font-size:.88rem;}
+.date-bar input[type=date]{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 12px;font-family:'Hind Siliguri',sans-serif;font-size:.88rem;outline:none;}
+.date-bar input:focus{border-color:var(--accent);}
+.stats{display:flex;gap:11px;margin-bottom:16px;flex-wrap:wrap;}
+.stat{flex:1;min-width:95px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;text-align:center;}
+.stat .num{font-size:1.8rem;font-weight:700;line-height:1;}
+.stat .lbl{font-size:.74rem;color:var(--text2);margin-top:3px;}
+.sp .num{color:#00c9a7;}.sa .num{color:#f43f5e;}.sl .num{color:#f59e0b;}.st .num{color:#3b82f6;}
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;}
+.emp-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;transition:border-color .15s,background .15s;}
+.emp-card.present{border-color:#00c9a7;background:rgba(0,201,167,.06);}
+.emp-card.absent{border-color:#f43f5e;background:rgba(244,63,94,.06);}
+.emp-card.leave{border-color:#f59e0b;background:rgba(245,158,11,.06);}
+.emp-info{display:flex;align-items:center;gap:10px;}
+.ava{width:34px;height:34px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;flex-shrink:0;}
+.emp-card.present .ava{background:rgba(0,201,167,.2);color:#00c9a7;}
+.emp-card.absent .ava{background:rgba(244,63,94,.2);color:#f43f5e;}
+.emp-card.leave .ava{background:rgba(245,158,11,.2);color:#f59e0b;}
+.emp-name{font-size:.86rem;font-weight:500;}
+.emp-num{font-size:.7rem;color:var(--text2);}
+.sbts{display:flex;gap:5px;}
+.sbt{width:33px;height:33px;border-radius:7px;border:1.5px solid transparent;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'Hind Siliguri',sans-serif;transition:all .15s;background:var(--surface2);color:var(--text2);}
+.sbt:hover{transform:scale(1.1);}
+.sbt.ap{background:rgba(0,201,167,.2);color:#00c9a7;border-color:#00c9a7;}
+.sbt.aa{background:rgba(244,63,94,.2);color:#f43f5e;border-color:#f43f5e;}
+.sbt.al{background:rgba(245,158,11,.2);color:#f59e0b;border-color:#f59e0b;}
+
+/* MONTHLY */
+.month-controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.month-controls select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 12px;font-family:'Hind Siliguri',sans-serif;font-size:.88rem;outline:none;cursor:pointer;}
+.month-controls select:focus{border-color:var(--accent);}
+
+.monthly-wrap{overflow:auto;max-height:calc(100vh - 220px);border-radius:12px;border:1px solid var(--border);}
+.mt{border-collapse:collapse;font-size:.8rem;}
+.mt th{background:var(--surface2);color:var(--text2);padding:8px 6px;text-align:center;font-weight:600;white-space:nowrap;border:1px solid var(--border);position:sticky;top:0;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,.4);}
+.mt th.ncol{text-align:left;min-width:150px;position:sticky;left:0;z-index:4;background:var(--surface2);box-shadow:2px 0 4px rgba(0,0,0,.3);}
+.mt td{padding:4px 3px;border:1px solid var(--border);text-align:center;background:var(--surface);}
+.mt td.ntd{text-align:left;padding:5px 10px;font-weight:500;font-size:.82rem;background:var(--surface);position:sticky;left:0;z-index:1;white-space:nowrap;box-shadow:2px 0 4px rgba(0,0,0,.2);}
+.mt td.std{background:var(--surface2);font-weight:700;min-width:42px;}
+.wkh{color:#666!important;}
+.wkc{background:#111b27!important;}
+.holc{background:#1a1f12!important;color:#6b8c42!important;}
+.holh{color:#6b8c42!important;}
+.otc{background:#1a1528!important;}
+.oth{color:#a78bfa!important;}
+.ot-btn{width:28px;height:26px;border-radius:5px;border:1.5px solid transparent;cursor:pointer;font-size:.68rem;font-weight:700;font-family:'Hind Siliguri',sans-serif;transition:all .12s;background:var(--surface2);color:#666;}
+.ot-btn:hover{transform:scale(1.1);}
+.ot-btn.ot-on{background:rgba(167,139,250,.2);color:#a78bfa;border-color:#a78bfa;}
+.cb{width:28px;height:26px;border-radius:5px;border:1.5px solid transparent;cursor:pointer;font-size:.73rem;font-weight:700;font-family:'Hind Siliguri',sans-serif;transition:all .12s;background:var(--surface2);color:var(--text2);}
+.cb:hover{transform:scale(1.15);}
+.cb.cp{background:rgba(0,201,167,.25);color:#00c9a7;border-color:#00c9a7;}
+.cb.ca{background:rgba(244,63,94,.25);color:#f43f5e;border-color:#f43f5e;}
+.cb.cl{background:rgba(245,158,11,.25);color:#f59e0b;border-color:#f59e0b;}
+
+/* Row-fill bar */
+.rfill{background:#0d1720!important;}
+.rfill td{background:#0d1720!important;padding:3px 2px!important;}
+.rfill .ntd{font-size:.7rem;color:var(--text2);background:#0d1720!important;}
+.fb{padding:2px 7px;border-radius:5px;border:1px solid var(--border);cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.7rem;font-weight:700;background:var(--surface2);}
+.fb.fp{color:#00c9a7;border-color:#00c9a7;}
+.fb.fa{color:#f43f5e;border-color:#f43f5e;}
+.fb.fl{color:#f59e0b;border-color:#f59e0b;}
+.fb.fn{color:#8ba3bf;border-color:#2a3f5a;}
+.fb:hover{filter:brightness(1.3);}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:90%;max-width:440px;}
+.modal h3{font-size:1rem;margin-bottom:12px;color:var(--accent);}
+.modal textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:'Hind Siliguri',sans-serif;font-size:.88rem;min-height:180px;resize:vertical;outline:none;}
+.modal-actions{display:flex;gap:10px;margin-top:12px;justify-content:flex-end;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#0f1923;padding:10px 18px;border-radius:9px;font-weight:600;font-size:.86rem;opacity:0;transform:translateY(14px);transition:all .3s;z-index:999;}
+.toast.show{opacity:1;transform:translateY(0);}
+/* REPORT */
+.rpt-controls{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.rpt-controls label{color:var(--text2);font-size:.85rem;white-space:nowrap;}
+.rpt-controls select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 11px;font-family:'Hind Siliguri',sans-serif;font-size:.85rem;outline:none;cursor:pointer;}
+.rpt-controls select:focus{border-color:var(--accent);}
+.rpt-summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.rpt-card{flex:1;min-width:110px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.rpt-card .rn{font-size:2rem;font-weight:700;line-height:1;}
+.rpt-card .rl{font-size:.75rem;color:var(--text2);margin-top:4px;}
+.rpt-table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:20px;}
+.rpt-table{border-collapse:collapse;font-size:.83rem;width:100%;}
+.rpt-table th{background:var(--surface2);color:var(--text2);padding:9px 12px;text-align:center;font-weight:600;border:1px solid var(--border);}
+.rpt-table th:first-child,.rpt-table td:first-child{text-align:left;}
+.rpt-table td{padding:8px 12px;border:1px solid var(--border);text-align:center;background:var(--surface);}
+.rpt-table td:first-child{font-weight:500;}
+.rpt-table tr:hover td{filter:brightness(1.1);}
+.detail-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+.detail-box h3{font-size:1rem;font-weight:700;color:var(--accent);margin-bottom:14px;}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+.dc{background:var(--surface2);border-radius:8px;padding:12px;text-align:center;}
+.dc .dn{font-size:1.6rem;font-weight:700;}
+.dc .dl{font-size:.72rem;color:var(--text2);margin-top:2px;}
+.mb-wrap{overflow-x:auto;}
+.mbt{border-collapse:collapse;font-size:.8rem;width:100%;}
+.mbt th{background:var(--surface2);color:var(--text2);padding:7px 10px;text-align:center;font-weight:600;border:1px solid var(--border);}
+.mbt td{padding:6px 10px;border:1px solid var(--border);text-align:center;background:var(--surface);}
+.mbt td:first-child{text-align:left;font-weight:500;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📋 উপস্থিতি রেজিস্টার</h1>
+  <div class="actions">
+    <span id="fbStatus" style="font-size:.75rem;padding:4px 10px;border-radius:8px;background:var(--surface2);color:#f43f5e">🔴 অফলাইন</span>
+    <button class="btn btn-secondary edit-only" onclick="openManageModal()">✏️ নাম সম্পাদনা</button>
+    <button class="btn btn-secondary edit-only" onclick="openHolidayModal()">🎌 ছুটির তালিকা</button>
+    <button class="btn btn-blue" onclick="exportCSV()">📥 CSV ডাউনলোড</button>
+    <button class="btn btn-secondary" onclick="backupData()" title="সব ডেটা JSON ফাইলে ডাউনলোড করুন">⬇️ ব্যাকআপ</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('restoreInput').click()" title="আগের ব্যাকআপ ফাইল লোড করুন">⬆️ রিস্টোর</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(this)">
+    <button class="btn btn-primary edit-only" onclick="saveAll()">💾 সংরক্ষণ</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('daily')">📅 দৈনিক ইনপুট</div>
+  <div class="tab" onclick="switchTab('monthly')">📊 মাসিক টেবিল</div>
+  <div class="tab" onclick="switchTab('report')">📈 রিপোর্ট</div>
+</div>
+
+<!-- DAILY -->
+<div class="panel active" id="panel-daily">
+  <div class="date-bar">
+    <label>তারিখ:</label>
+    <input type="date" id="datePicker" onchange="loadDailyDate()">
+    <span id="holidayNote" style="font-size:.8rem;color:#6b8c42;display:none">🎌 আজ সরকারি ছুটি — উপস্থিতি কর্মদিবস হিসেবে গণনা হবে না</span>
+    <button class="btn btn-primary btn-sm" onclick="markAll('উ')">✅ সবাই উপস্থিত</button>
+    <button class="btn btn-secondary btn-sm" onclick="markAll('অ')">❌ সবাই অনুপস্থিত</button>
+  </div>
+  <div class="stats">
+    <div class="stat sp"><div class="num" id="cP">0</div><div class="lbl">উপস্থিত</div></div>
+    <div class="stat sa"><div class="num" id="cA">0</div><div class="lbl">অনুপস্থিত</div></div>
+    <div class="stat sl"><div class="num" id="cL">0</div><div class="lbl">ছুটি</div></div>
+    <div class="stat st"><div class="num" id="cT">0</div><div class="lbl">মোট</div></div>
+    <div class="stat" style="background:rgba(167,139,250,.1);border-color:#a78bfa"><div class="num" id="cOT" style="color:#a78bfa">0</div><div class="lbl">OT কর্মী</div></div>
+    <div class="stat" style="background:rgba(167,139,250,.1);border-color:#a78bfa"><div class="num" id="cOTH" style="color:#a78bfa">0h</div><div class="lbl">মোট OT ঘণ্টা</div></div>
+  </div>
+  <div class="emp-grid" id="empGrid"></div>
+</div>
+
+<!-- MONTHLY -->
+<div class="panel" id="panel-monthly">
+  <div class="month-controls">
+    <label style="color:var(--text2);font-size:.88rem;">মাস:</label>
+    <select id="monthSel" onchange="renderMonthly()">
+      <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+      <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+      <option value="5">মে</option><option value="6">জুন</option>
+      <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+      <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+      <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+    </select>
+    <select id="yearSel" onchange="renderMonthly()"></select>
+    <button class="btn btn-primary btn-sm" onclick="fillMonthAll('উ')">✅ পুরো মাস — সবাই উপস্থিত</button>
+    <button class="btn btn-secondary btn-sm" onclick="clearAllMonth()">🗑 সবার ডেটা মুছুন</button>
+    <button class="btn btn-secondary btn-sm" onclick="openAnnounceModal()">🎌 এই মাসের ছুটি ঘোষণা</button>
+    <button class="btn btn-secondary btn-sm" onclick="saveAll()">💾 সংরক্ষণ</button>
+  </div>
+  <!-- Holiday announcement bar for current month -->
+  <div id="announceBar" style="display:none;background:rgba(107,140,66,.1);border:1px solid #3a5a1a;border-radius:10px;padding:10px 16px;margin-bottom:10px;font-size:.82rem;color:#8fba50;">
+    🎌 <span id="announceText"></span>
+    <button onclick="clearAnnounce()" style="margin-left:10px;background:none;border:none;color:#f43f5e;cursor:pointer;font-size:.78rem;">✕ বাতিল</button>
+  </div>
+  <p style="font-size:.78rem;color:var(--text2);margin-bottom:10px;">
+    💡 <b style="color:var(--text)">একজনের পুরো মাস:</b> কর্মচারীর নামের পাশের সবুজ <b>উ</b> বা লাল <b>অ</b> বাটনে ক্লিক করলে সেই মাসের সব কর্মদিবস একসাথে পূরণ হবে।
+  </p>
+  <div class="monthly-wrap">
+    <table class="mt" id="monthlyTable"></table>
+  </div>
+</div>
+
+
+<!-- REPORT -->
+<div class="panel" id="panel-report">
+  <div class="rpt-controls" style="flex-direction:column;align-items:stretch;gap:12px">
+    <!-- Row 1: কর্মচারী + quick range buttons -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <label>কর্মচারী:</label>
+      <select id="rEmpSel" style="min-width:160px">
+        <option value="__all__">— সবাই —</option>
+      </select>
+      <span style="color:var(--border);margin:0 4px">|</span>
+      <label style="color:var(--text2);font-size:.78rem">দ্রুত:</label>
+      <button class="btn btn-secondary btn-sm" onclick="setQuickRange('this_month')">এই মাস</button>
+      <button class="btn btn-secondary btn-sm" onclick="setQuickRange('last_month')">গত মাস</button>
+      <button class="btn btn-secondary btn-sm" onclick="setQuickRange('this_year')">এই বছর</button>
+      <button class="btn btn-secondary btn-sm" onclick="setQuickRange('last_3')">গত ৩ মাস</button>
+      <button class="btn btn-secondary btn-sm" onclick="setQuickRange('last_6')">গত ৬ মাস</button>
+    </div>
+    <!-- Row 2: date range + action buttons -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label>থেকে:</label>
+      <select id="rFromM">
+        <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+        <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+        <option value="5">মে</option><option value="6">জুন</option>
+        <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+        <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+        <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+      </select>
+      <select id="rFromY"></select>
+      <span style="color:var(--text2)">→</span>
+      <label>পর্যন্ত:</label>
+      <select id="rToM">
+        <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+        <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+        <option value="5">মে</option><option value="6">জুন</option>
+        <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+        <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+        <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+      </select>
+      <select id="rToY"></select>
+      <button class="btn btn-primary btn-sm" onclick="genReport()">🔍 রিপোর্ট দেখুন</button>
+      <button class="btn btn-blue btn-sm" onclick="exportReportCSV()">📥 CSV ডাউনলোড</button>
+    </div>
+  </div>
+  <div id="reportOut"></div>
+</div>
+
+<!-- Announce holiday modal -->
+<div class="overlay" id="announceModal">
+  <div class="modal" style="max-width:480px">
+    <h3>🎌 এই মাসের ছুটির দিন ঘোষণা</h3>
+    <p style="color:var(--text2);font-size:.8rem;margin-bottom:10px;">নিচের তারিখগুলো নির্বাচন করুন — সবার ক্ষেত্রে একসাথে ছুটি প্রযোগ হবে।</p>
+    <div id="announceCalendar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+    <p style="font-size:.75rem;color:var(--text2)">নির্বাচিত দিনগুলো সরকারি ছুটির তালিকায় যোগ হবে এবং সবার জন্য 🎌 হিসেবে দেখাবে।</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAnnounceModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="applyAnnounce()">✅ প্রযোগ করুন</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="manageModal">
+  <div class="modal" style="max-width:560px">
+    <h3>👥 কর্মচারী ব্যবস্থাপনা</h3>
+    <p style="color:var(--text2);font-size:.78rem;margin-bottom:10px">নিষ্ক্রিয় করলে পুরনো ডেটা মুছবে না। কর্মকাল খালি রাখলে সবসময় সক্রিয় ধরা হবে।</p>
+    <div id="empMetaList" style="max-height:420px;overflow-y:auto;margin-bottom:12px;"></div>
+    <button class="btn btn-primary btn-sm" onclick="addNewEmpRow()" style="margin-bottom:12px">➕ নতুন কর্মচারী যোগ</button>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveEmployees()">✅ সংরক্ষণ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Holiday modal -->
+<div class="overlay" id="holidayModal">
+  <div class="modal" style="max-width:520px">
+    <h3>🎌 সরকারি ছুটির তালিকা</h3>
+    <p style="color:var(--text2);font-size:.8rem;margin-bottom:10px;">প্রতিটি লাইনে একটি তারিখ লিখুন (YYYY-MM-DD ফরম্যাটে) &nbsp;|&nbsp; যেমন: 2025-02-21</p>
+    <textarea id="holidayInput" style="min-height:220px"></textarea>
+    <p style="color:var(--text2);font-size:.75rem;margin-top:6px">এই দিনগুলো মাসিক টেবিলে 🎌 চিহ্নে দেখাবে এবং রিপোর্টে কর্মদিবস থেকে বাদ যাবে।</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeHolidayModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveHolidays()">সংরক্ষণ</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Password & Mode System ──
+const EDIT_PASSWORD = 'admin1234'; // এখানে পাসওয়ার্ড পরিবর্তন করুন
+let isEditMode = false;
+
+function tryLogin(){
+  const pw = document.getElementById('pwInput').value;
+  if(pw === EDIT_PASSWORD){
+    isEditMode = true;
+    localStorage.setItem('att_edit_mode','1');
+    hideLoginOverlay();
+    applyMode();
+    showToast('✅ সম্পাদনা মোড চালু');
+  } else {
+    document.getElementById('pwErr').textContent = '❌ পাসওয়ার্ড ভুল';
+    document.getElementById('pwInput').value='';
+  }
+}
+
+function viewMode(){
+  isEditMode = false;
+  localStorage.removeItem('att_edit_mode');
+  hideLoginOverlay();
+  applyMode();
+}
+
+function lockApp(){
+  isEditMode = false;
+  localStorage.removeItem('att_edit_mode');
+  applyMode();
+  showLoginOverlay();
+}
+
+function showLoginOverlay(){
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwErr').textContent='';
+  setTimeout(()=>document.getElementById('pwInput').focus(),100);
+}
+
+function hideLoginOverlay(){
+  document.getElementById('loginOverlay').style.display='none';
+}
+
+function applyMode(){
+  const editBadge=document.getElementById('editBadge');
+  const viewBadge=document.getElementById('viewBadge');
+  if(isEditMode){
+    editBadge.style.display='block';
+    viewBadge.style.display='none';
+    // সব বাটন ও ইনপুট সক্রিয়
+    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='');
+    document.body.classList.remove('view-only-mode');
+  } else {
+    editBadge.style.display='none';
+    viewBadge.style.display='block';
+    // সব বাটন ও ইনপুট নিষ্ক্রিয়
+    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='none');
+    document.body.classList.add('view-only-mode');
+  }
+}
+
+// ── Firebase Config ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCd54-DLnDCSy2AtGZrsEwMO21efSefsMU",
+  authDomain: "present-data-38670.firebaseapp.com",
+  databaseURL: "https://present-data-38670-default-rtdb.firebaseio.com",
+  projectId: "present-data-38670",
+  storageBucket: "present-data-38670.firebasestorage.app",
+  messagingSenderId: "1095571232486",
+  appId: "1:1095571232486:web:072af19abae146159a8d27"
+};
+// Firebase — ঐচ্ছিক (না থাকলেও অফলাইনে চলবে)
+let db = null;
+let fbConnected = false;
+let fbSaveTimer = null;
+
+function initFirebase(){
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    db.ref('.info/connected').on('value', snap => {
+      fbConnected = !!snap.val();
+      const el = document.getElementById('fbStatus');
+      if(el){
+        el.textContent = fbConnected ? '🟢 অনলাইন' : '🔴 অফলাইন';
+        el.style.color = fbConnected ? '#00c9a7' : '#f43f5e';
+      }
+    });
+  } catch(e) {
+    console.warn('Firebase init failed:', e);
+    const el = document.getElementById('fbStatus');
+    if(el){ el.textContent='⚫ অফলাইন মোড'; el.style.color='#888'; }
+  }
+}
+
+// Save all data to Firebase (debounced)
+function fbSave(){
+  if(!db) return;
+  clearTimeout(fbSaveTimer);
+  fbSaveTimer = setTimeout(()=>{
+    db.ref('attData').set({
+      allData,
+      empMeta,
+      holidays: [...publicHolidays]
+    }).catch(e=>console.error('Firebase save error:',e));
+  }, 1500);
+}
+
+// Load from Firebase on startup
+function fbLoad(callback){
+  if(!db){ callback(); return; }
+  db.ref('attData').once('value').then(snap=>{
+    const d=snap.val();
+    if(d){
+      if(d.allData) { allData=d.allData; localStorage.setItem('att_data',JSON.stringify(allData)); }
+      if(d.empMeta) { 
+        empMeta=d.empMeta; 
+        empMeta.forEach(e=>{ if(!e.periods) e.periods=[]; });
+        localStorage.setItem('att_emp_meta',JSON.stringify(empMeta)); 
+      }
+      if(d.holidays) { 
+        publicHolidays=new Set(d.holidays); 
+        localStorage.setItem('att_holidays',JSON.stringify(d.holidays)); 
+      }
+      employees=empMeta.filter(e=>e.active).map(e=>e.name);
+    }
+    callback();
+  }).catch(e=>{ console.error('Firebase load error:',e); callback(); });
+}
+
+// Listen for realtime changes from other devices
+function fbListen(){
+  if(!db) return;
+  db.ref('attData').on('value', snap=>{
+    const d=snap.val();
+    if(!d) return;
+    if(d.allData) { allData=d.allData; localStorage.setItem('att_data',JSON.stringify(allData)); }
+    if(d.empMeta) { 
+      empMeta=d.empMeta; 
+      empMeta.forEach(e=>{ if(!e.periods) e.periods=[]; });
+      employees=empMeta.filter(e=>e.active).map(e=>e.name);
+      localStorage.setItem('att_emp_meta',JSON.stringify(empMeta)); 
+    }
+    if(d.holidays) { 
+      publicHolidays=new Set(d.holidays); 
+      localStorage.setItem('att_holidays',JSON.stringify(d.holidays)); 
+    }
+    // refresh current view silently
+    const activePanel=document.querySelector('.panel.active');
+    if(activePanel){
+      if(activePanel.id==='panel-monthly') renderMonthly();
+      else if(activePanel.id==='panel-daily') loadDailyDate();
+    }
+    showToast('🔄 ডেটা আপডেট হয়েছে');
+  });
+}
+
+const DEFAULT_EMP = [
+  "মোঃ রফিকুল ইসলাম","নাসরিন আক্তার","মোঃ আবুল হোসেন","সুমাইয়া বেগম",
+  "মোঃ জাহিদুল হক","রাহেলা খানম","মোঃ শফিকুল আলম","তামান্না ইয়াসমিন",
+  "মোঃ নুরুল আমিন","ফাতেমা তুজ জোহরা","মোঃ কামরুল হাসান","শাহিনা পারভীন",
+  "মোঃ মাহবুবুর রহমান","মোছাঃ রোকেয়া বেগম","মোঃ ইমরান হোসেন","দিলরুবা খানম"
+];
+const BN_DAYS_S   = ['রবি','সোম','মঙ্গল','বুধ','বৃহস্পতি','শুক্র','শনি'];
+const BN_DAYS_FULL= ['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'];
+let publicHolidays = new Set(JSON.parse(localStorage.getItem('att_holidays')||'[]'));
+
+// empMeta: [{name, active, periods:[{from,to}]}]
+// periods = কর্মকালীন সময়সীমা। খালি থাকলে সবসময় সক্রিয়।
+let empMeta = JSON.parse(localStorage.getItem('att_emp_meta')||'null');
+if(!empMeta){
+  const oldEmp = JSON.parse(localStorage.getItem('att_emp')||'null')||DEFAULT_EMP;
+  empMeta = oldEmp.map(name=>({name, active:true, periods:[]}));
+} else {
+  // ensure periods field exists
+  empMeta.forEach(e=>{ if(!e.periods) e.periods=[]; });
+}
+// employees = active names (for all existing code)
+let employees = empMeta.filter(e=>e.active).map(e=>e.name);
+let allData   = JSON.parse(localStorage.getItem('att_data')||'{}');
+let currentDate = '';
+let todayStatus = {};
+let todayOT = {}; // আজকের OT ঘণ্টা {empName: hours}
+
+function getToday(){ return new Date().toISOString().split('T')[0]; }
+function empInactiveThisMonth(emp, y, m){
+  const key='inactive_'+dateKey(y,m,1).slice(0,7);
+  return !!(allData[key]&&allData[key][emp]);
+}
+function toggleEmpMonth(emp, y, m){
+  const key='inactive_'+dateKey(y,m,1).slice(0,7);
+  if(!allData[key]) allData[key]={};
+  const wasInactive=!!allData[key][emp];
+  allData[key][emp]=wasInactive?null:true;
+  localStorage.setItem('att_data',JSON.stringify(allData));
+  fbSave();
+  renderMonthly();
+  showToast(wasInactive?`✅ ${emp.split(' ')[0]} — এই মাসে সক্রিয়`:`⏸ ${emp.split(' ')[0]} — এই মাসে নিষ্ক্রিয়`);
+}
+function empActiveInMonth(emp, y, m){
+  const meta=empMeta.find(e=>e.name===emp);
+  if(!meta||!meta.active) return false;
+  if(!meta.periods||!meta.periods.length) return true; // no restriction
+  const mStart=dateKey(y,m,1);
+  const mEnd=dateKey(y,m,daysInMonth(y,m));
+  // active if ANY period overlaps this month
+  return meta.periods.some(p=>{
+    const from=p.from||'0000-00-00';
+    const to=p.to||'9999-99-99';
+    return from<=mEnd && to>=mStart;
+  });
+}
+function empActiveOnDate(emp, dateStr){
+  const meta=empMeta.find(e=>e.name===emp);
+  if(!meta||!meta.active) return false;
+  // check monthly inactive toggle
+  const ym=dateStr.slice(0,7);
+  const ikey='inactive_'+ym;
+  if(allData[ikey]&&allData[ikey][emp]) return false;
+  if(!meta.periods||!meta.periods.length) return true;
+  return meta.periods.some(p=>{
+    const from=p.from||'0000-00-00';
+    const to=p.to||'9999-99-99';
+    return dateStr>=from && dateStr<=to;
+  });
+}
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+function dow(y,m,d){ return new Date(y,m-1,d).getDay(); }
+function dateKey(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function isWE(y,m,d){ const w=dow(y,m,d); return w===5; } // শুধু শুক্রবার বন্ধ
+function isHoliday(y,m,d){ return publicHolidays.has(dateKey(y,m,d)); }
+function isOffDay(y,m,d){ return isWE(y,m,d)||isHoliday(y,m,d); }
+
+function init(){
+  // Firebase থেকে লোড করুন, তারপর UI শুরু করুন
+  showToast('⏳ ডেটা লোড হচ্ছে...');
+  fbLoad(()=>{
+    initUI();
+    setTimeout(fbListen, 2000); // realtime sync চালু
+  });
+}
+function initUI(){
+  const ySel=document.getElementById('yearSel');
+  const y=new Date().getFullYear();
+  for(let i=2024;i<=2030;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===y)o.selected=true;ySel.appendChild(o);}
+  document.getElementById('monthSel').value=new Date().getMonth()+1;
+  document.getElementById('datePicker').value=getToday();
+  currentDate=getToday();
+  loadDailyDate();
+  setInterval(saveAll, 30000);
+  // পাসওয়ার্ড মোড চেক
+  if(localStorage.getItem('att_edit_mode')==='1'){
+    isEditMode=true;
+    hideLoginOverlay();
+    applyMode();
+  } else {
+    showLoginOverlay();
+    applyMode();
+  }
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['daily','monthly','report'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='monthly') renderMonthly();
+  if(t==='report') initReportSelects();
+}
+
+// ── DAILY ──
+function loadDailyDate(){
+  currentDate=document.getElementById('datePicker').value;
+  if(!currentDate) return;
+  const [y,m,d]=currentDate.split('-').map(Number);
+  const hn=document.getElementById('holidayNote');
+  hn.style.display=isHoliday(y,m,d)?'inline':'none';
+  todayStatus=allData[currentDate]?{...allData[currentDate]}:{};
+  employees.forEach(e=>{if(!todayStatus[e]) todayStatus[e]='উ';});
+  // OT ঘণ্টা লোড
+  const otHKey='oth_'+currentDate;
+  todayOT=allData[otHKey]?{...allData[otHKey]}:{};
+  renderGrid(); updateStats();
+}
+
+function renderGrid(){
+  const g=document.getElementById('empGrid'); g.innerHTML='';
+  employees.forEach((emp,i)=>{
+    const s=todayStatus[emp]||'উ';
+    const cc=s==='উ'?'present':s==='অ'?'absent':'leave';
+    const ini=emp.replace(/মোঃ |মোছাঃ /g,'').trim().split(' ').slice(0,2).map(w=>w[0]).join('');
+    g.innerHTML+=`<div class="emp-card ${cc}" id="dc_${i}">
+      <div class="emp-info">
+        <div class="ava" id="da_${i}">${ini}</div>
+        <div><div class="emp-name">${emp}</div><div class="emp-num">#${String(i+1).padStart(2,'0')}</div></div>
+      </div>
+      <div class="sbts">
+        <button class="sbt ${s==='উ'?'ap':''}" onclick="setDaily(${i},'উ')">উ</button>
+        <button class="sbt ${s==='অ'?'aa':''}" onclick="setDaily(${i},'অ')">অ</button>
+        <button class="sbt ${s==='ছ'?'al':''}" onclick="setDaily(${i},'ছ')">ছ</button>
+      </div></div>`;
+  });
+}
+
+function setDaily(idx,s){
+  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  const emp=employees[idx]; todayStatus[emp]=s;
+  if(!allData[currentDate]) allData[currentDate]={};
+  allData[currentDate][emp]=s;
+  const card=document.getElementById(`dc_${idx}`);
+  card.className='emp-card '+(s==='উ'?'present':s==='অ'?'absent':'leave');
+  const btns=card.querySelectorAll('.sbt');
+  btns[0].className='sbt '+(s==='উ'?'ap':'');
+  btns[1].className='sbt '+(s==='অ'?'aa':'');
+  btns[2].className='sbt '+(s==='ছ'?'al':'');
+  updateStats();
+}
+
+function setDailyOT(idx, val){
+  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  const emp=employees[idx];
+  const h=parseFloat(val)||0;
+  if(h>0){ todayOT[emp]=h; } else { delete todayOT[emp]; }
+  const otHKey='oth_'+currentDate;
+  if(!allData[otHKey]) allData[otHKey]={};
+  if(h>0) allData[otHKey][emp]=h; else delete allData[otHKey][emp];
+  localStorage.setItem('att_data',JSON.stringify(allData));
+  fbSave();
+  updateStats();
+}
+
+function updateStats(){
+  let p=0,a=0,l=0,otC=0,otH=0;
+  employees.forEach(e=>{
+    const s=todayStatus[e]||'উ';
+    if(s==='উ')p++;else if(s==='অ')a++;else l++;
+    if(todayOT[e]){otC++;otH+=todayOT[e];}
+  });
+  document.getElementById('cP').textContent=p;
+  document.getElementById('cA').textContent=a;
+  document.getElementById('cL').textContent=l;
+  document.getElementById('cT').textContent=employees.length;
+  const otEl=document.getElementById('cOT'); if(otEl) otEl.textContent=otC;
+  const otHEl=document.getElementById('cOTH'); if(otHEl) otHEl.textContent=otH%1===0?otH+'h':otH.toFixed(1)+'h';
+}
+
+function markAll(s){
+  employees.forEach((e,i)=>{todayStatus[e]=s;if(!allData[currentDate])allData[currentDate]={};allData[currentDate][e]=s;});
+  renderGrid(); updateStats();
+}
+
+// ── MONTHLY TABLE ──
+function renderMonthly(){
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  const days=daysInMonth(y,m);
+  const tbl=document.getElementById('monthlyTable');
+
+  // Header
+  let h=`<thead><tr><th class="ncol">কর্মচারী</th><th class="ncol" style="min-width:60px;left:150px">দ্রুত পূরণ</th>`;
+  for(let d=1;d<=days;d++){
+    const w=dow(y,m,d);
+    const we=isWE(y,m,d);
+    const hol=isHoliday(y,m,d);
+    const cls=hol?'holh':we?'wkh':'';
+    const otLabel = we ? '<br><span style="font-size:.6rem;color:#a78bfa">OT?</span>' : '';
+    h+=`<th class="${cls}" style="min-width:${we?'54px':'44px'}">${d}<br><span style="font-size:.65rem">${BN_DAYS_S[w]}</span>${hol?'<br><span style="font-size:.6rem">🎌</span>':''}${otLabel}</th>`;
+  }
+  h+=`<th style="color:#00c9a7;min-width:44px">উপস্থিত</th><th style="color:#f43f5e;min-width:44px">অনুপস্থিত</th><th style="color:#f59e0b;min-width:44px">ছুটি</th><th style="color:#a78bfa;min-width:44px">OT দিন</th></tr></thead>`;
+
+  // Body
+  let b='<tbody>';
+  employees.forEach((emp,ei)=>{
+    const isInactiveM=empInactiveThisMonth(emp,y,m);
+    const _ms=getEmpMonthStats(emp,y,m);
+    let p=_ms.p,a=_ms.a,l=_ms.l,otDays=_ms.otD;
+    const rowStyle=isInactiveM?'opacity:.32;':'';
+    let row=`<tr style="${rowStyle}"><td class="ntd" style="padding:4px 8px">
+      <div style="font-size:.85rem;font-weight:600">${emp}</div>
+      <button onclick="toggleEmpMonth('${emp}',${y},${m})" style="margin-top:3px;padding:2px 8px;border-radius:5px;border:none;cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.68rem;font-weight:700;background:${isInactiveM?'rgba(244,63,94,.15)':'rgba(0,201,167,.12)'};color:${isInactiveM?'#f43f5e':'#00c9a7'};border:1px solid ${isInactiveM?'#f43f5e':'#00c9a7'}">
+        ${isInactiveM?'⏸ নিষ্ক্রিয়':'✅ সক্রিয়'}
+      </button>
+    </td>`;
+    row+=`<td style="background:var(--surface2);text-align:center;position:sticky;left:150px;z-index:1">
+      <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+        <button class="fb fp" onclick="fillEmpMonth('${emp}',${y},${m},'উ')">✅ সব উ</button>
+        <button class="fb fa" onclick="fillEmpMonth('${emp}',${y},${m},'অ')">❌ সব অ</button>
+        <button class="fb fl" onclick="fillEmpMonth('${emp}',${y},${m},'ছ')">🌙 সব ছ</button>
+        <button class="fb fn" onclick="clearEmpMonth('${emp}',${y},${m})">🗑 ডেটা নেই</button>
+      </div></td>`;
+
+    for(let d=1;d<=days;d++){
+      const we=isWE(y,m,d);
+      const hol=isHoliday(y,m,d);
+      const key=dateKey(y,m,d);
+      const isEmpActive=!isInactiveM&&empActiveOnDate(emp,key);
+      const defaultS = we?'ব':hol?'🎌':'উ';
+      let s=(allData[key]&&allData[key][emp])?allData[key][emp]:defaultS;
+      // OT count handled inside friday cell block
+      if(we){
+        const friAbs=!!(allData[key]&&allData[key][emp]==='অ');
+        const friOTH=allData['oth_'+key]?allData['oth_'+key][emp]||'':'';
+        const hasFriOT=friOTH>0;
+        row+=`<td class="${hasFriOT?'otc':'wkc'}" style="text-align:center;padding:3px 2px;min-width:52px">
+          <div style="font-size:.62rem;color:#888;margin-bottom:2px">শুক্র</div>
+          <button class="cb ${friAbs?'ca':''}" onclick="setFriAbs('${emp}',${y},${m},${d},this)" title="অনুপস্থিত">অ</button>
+          <div style="display:flex;align-items:center;gap:2px;margin-top:3px;justify-content:center">
+            <input type="number" min="0" max="24" step="0.5" value="${friOTH||''}" placeholder="OT" 
+              style="width:38px;background:var(--surface);border:1px solid #a78bfa;border-radius:4px;color:#a78bfa;padding:1px 3px;font-size:.7rem;text-align:center"
+              onchange="setMonthlyOT('${emp}',${y},${m},${d},this.value,this)">
+            <span style="font-size:.6rem;color:#a78bfa">h</span>
+          </div>
+        </td>`;
+      } else if(hol){
+        row+=`<td class="holc" style="font-size:.75rem;font-weight:600;text-align:center">🎌</td>`;
+      } else if(!isEmpActive) {
+        row+=`<td style="background:#0d141c;color:#2a3f5a;text-align:center;font-size:.75rem">—</td>`;
+      } else {
+        const regOTH=allData['oth_'+key]?allData['oth_'+key][emp]||'':'';
+        const hasRegOT=regOTH>0;
+        row+=`<td style="${hasRegOT?'background:rgba(167,139,250,.07)':''}">
+          <div style="display:flex;gap:2px;justify-content:center">
+            <button class="cb ${s==='উ'?'cp':''}" onclick="setCellM('${emp}',${y},${m},${d},'উ',this)">উ</button>
+            <button class="cb ${s==='অ'?'ca':''}" onclick="setCellM('${emp}',${y},${m},${d},'অ',this)">অ</button>
+            <button class="cb ${s==='ছ'?'cl':''}" onclick="setCellM('${emp}',${y},${m},${d},'ছ',this)">ছ</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:2px;justify-content:center;margin-top:2px">
+            <input type="number" min="0" max="24" step="0.5" value="${regOTH||''}" placeholder="OT"
+              style="width:38px;background:var(--surface);border:1px solid ${hasRegOT?'#a78bfa':'var(--border)'};border-radius:4px;color:#a78bfa;padding:1px 3px;font-size:.7rem;text-align:center"
+              onchange="setMonthlyOT('${emp}',${y},${m},${d},this.value,this)">
+            <span style="font-size:.6rem;color:#a78bfa">h</span>
+          </div>
+        </td>`;
+      }
+    }
+    const otHDisp=_ms.otH%1===0?_ms.otH+'h':_ms.otH.toFixed(1)+'h';
+    row+=`<td class="std" data-emp-p="${emp}" style="color:#00c9a7">${p}</td>
+          <td class="std" data-emp-a="${emp}" style="color:#f43f5e">${a}</td>
+          <td class="std" data-emp-l="${emp}" style="color:#f59e0b">${l}</td>
+          <td class="std" data-emp-ot="${emp}" style="color:#a78bfa">${otDays}</td>
+          <td class="std" data-emp-oth="${emp}" style="color:#c4b5fd">${_ms.otH>0?otHDisp:'-'}</td></tr>`;
+    b+=row;
+  });
+  b+='</tbody>';
+  tbl.innerHTML=h+b;
+  updateAnnounceBar();
+}
+
+function setMonthlyOT(emp,y,m,d,val,inp){
+  const key=dateKey(y,m,d);
+  const ohKey='oth_'+key;
+  const h=parseFloat(val)||0;
+  if(!allData[ohKey]) allData[ohKey]={};
+  if(h>0) allData[ohKey][emp]=h; else delete allData[ohKey][emp];
+  // cell border আপডেট
+  if(inp) inp.style.borderColor=h>0?'#a78bfa':'var(--border)';
+  localStorage.setItem('att_data',JSON.stringify(allData));
+  fbSave();
+  recalcRow(emp,y,m);
+}
+
+function setFriAbs(emp,y,m,d,btn){
+  const key=dateKey(y,m,d);
+  if(!allData[key]) allData[key]={};
+  const isAbs=allData[key][emp]==='অ';
+  allData[key][emp]=isAbs?null:'অ';
+  btn.className='cb '+(isAbs?'':'ca');
+  btn.closest('td').className=isAbs?'wkc':'wkc';
+  // update absent summary
+  recalcRow(emp,y,m);
+}
+
+// toggleOT removed — oth_ keys now used for all days
+
+function setCellM(emp,y,m,d,s,btn){
+  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  const key=dateKey(y,m,d);
+  if(!allData[key]) allData[key]={};
+  allData[key][emp]=s;
+  localStorage.setItem('att_data',JSON.stringify(allData));
+  fbSave();
+  const cell=btn.closest('td');
+  cell.querySelectorAll('.cb').forEach(b=>b.className='cb');
+  btn.className='cb '+(s==='উ'?'cp':s==='অ'?'ca':'cl');
+  recalcRow(emp,y,m);
+}
+
+// ── shared stats function used by monthly table AND report ──
+function getEmpMonthStats(emp,y,m){
+  const days=daysInMonth(y,m);
+  let p=0,a=0,l=0,wd=0,otD=0,otH=0;
+  const inactive=empInactiveThisMonth(emp,y,m);
+  if(inactive) return {p:0,a:0,l:0,wd:0,otD:0,otH:0,inactive:true};
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    if(!isOffDay(y,m,d)&&empActiveOnDate(emp,key)){
+      wd++;
+      const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
+      if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+    }
+    // Friday absence
+    if(isWE(y,m,d)&&allData[key]&&allData[key][emp]==='অ') a++;
+    // OT ঘণ্টা — oth_ key থেকে (সব দিন)
+    const ohKey='oth_'+key;
+    if(allData[ohKey]&&allData[ohKey][emp]>0){
+      otH+=allData[ohKey][emp];
+      otD++;
+    }
+  }
+  return {p,a,l,wd,otD,otH,inactive:false};
+}
+
+function recalcRow(emp,y,m){
+  const {p,a,l}=getEmpMonthStats(emp,y,m);
+  const ep=document.querySelector(`[data-emp-p="${emp}"]`); if(ep) ep.textContent=p;
+  const ea=document.querySelector(`[data-emp-a="${emp}"]`); if(ea) ea.textContent=a;
+  const el=document.querySelector(`[data-emp-l="${emp}"]`); if(el) el.textContent=l;
+  const ms2=getEmpMonthStats(emp,y,m);
+  const eth=document.querySelector(`[data-emp-oth="${emp}"]`);
+  if(eth) eth.textContent=ms2.otH>0?(ms2.otH%1===0?ms2.otH+'h':ms2.otH.toFixed(1)+'h'):'-';
+}
+
+// Fill entire month for ONE employee
+function fillEmpMonth(emp,y,m,s){
+  const days=daysInMonth(y,m);
+  let hasExisting=false;
+  for(let d=1;d<=days;d++){
+    const k=dateKey(y,m,d);
+    if(allData[k]&&allData[k][emp]!==undefined&&allData[k][emp]!==null){hasExisting=true;break;}
+  }
+  if(hasExisting && !confirm(`⚠️ ${emp.split(' ')[0]} — এই মাসের বিদ্যমান ডেটা মুছে যাবে। নিশ্চিত?`)) return;
+  for(let d=1;d<=days;d++){
+    if(isOffDay(y,m,d)) continue;
+    const key=dateKey(y,m,d);
+    if(!allData[key]) allData[key]={};
+    allData[key][emp]=s;
+  }
+  localStorage.setItem('att_data',JSON.stringify(allData));
+  fbSave();
+  renderMonthly();
+  showToast(`✅ ${emp.split(' ')[0]} — পুরো মাস "${s}" করা হয়েছে`);
+}
+
+function clearEmpMonth(emp,y,m){
+  const days=daysInMonth(y,m);
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    if(allData[key]){
+      delete allData[key][emp];
+      if(Object.keys(allData[key]).length===0) delete allData[key];
+    }
+  }
+  localStorage.setItem('att_data', JSON.stringify(allData));
+  fbSave();
+  renderMonthly();
+  showToast(`🗑 ${emp.split(' ')[0]} — এই মাসের সব ডেটা মুছে ফেলা হয়েছে`);
+}
+
+// Fill entire month for ALL employees
+function clearAllMonth(){
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  if(!confirm(`⚠️ ${BN_MONTHS_FULL[m-1]} ${y} — সবার ডেটা মুছে যাবে। নিশ্চিত?`)) return;
+  const days=daysInMonth(y,m);
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    if(allData[key]){
+      employees.forEach(e=>{ delete allData[key][e]; });
+      if(Object.keys(allData[key]).length===0) delete allData[key];
+    }
+  }
+  localStorage.setItem('att_data', JSON.stringify(allData));
+  renderMonthly();
+  showToast(`🗑 ${BN_MONTHS_FULL[m-1]} ${y} — সবার ডেটা মুছে ফেলা হয়েছে`);
+}
+
+function fillMonthAll(s){
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  if(!confirm(`⚠️ ${BN_MONTHS_FULL[m-1]} ${y} — সবার জন্য পুরো মাস পূরণ হবে। বিদ্যমান ডেটা মুছে যাবে। নিশ্চিত?`)) return;
+  const days=daysInMonth(y,m);
+  for(let d=1;d<=days;d++){
+    if(isOffDay(y,m,d)) continue;
+    const key=dateKey(y,m,d);
+    if(!allData[key]) allData[key]={};
+    employees.forEach(e=>{ allData[key][e]=s; });
+  }
+  renderMonthly();
+  showToast('✅ পুরো মাস — সবাইকে উপস্থিত করা হয়েছে');
+}
+
+// ── SAVE / CSV ──
+function openAnnounceModal(){
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  const days=daysInMonth(y,m);
+  const cal=document.getElementById('announceCalendar');
+  cal.innerHTML='';
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    const w=dow(y,m,d);
+    const isFri=w===5;
+    const isHol=publicHolidays.has(key);
+    const btn=document.createElement('button');
+    btn.textContent=d+' '+BN_DAYS_S[w];
+    btn.dataset.key=key;
+    btn.style.cssText=`padding:5px 9px;border-radius:7px;border:1.5px solid ${isHol?'#6b8c42':isFri?'#2a3f5a':'#2a3f5a'};cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.78rem;font-weight:600;background:${isHol?'rgba(107,140,66,.2)':isFri?'#141e2b':'var(--surface2)'};color:${isHol?'#8fba50':isFri?'#555':'var(--text2)'};transition:all .15s;`;
+    btn.dataset.selected=isHol?'1':'0';
+    if(isFri){ btn.style.opacity='.5'; btn.title='শুক্রবার — আলাদাভাবে ঘোষণা করুন'; btn.disabled=true; }
+    else {
+      btn.onclick=function(){
+        const sel=this.dataset.selected==='1';
+        this.dataset.selected=sel?'0':'1';
+        this.style.background=sel?'var(--surface2)':'rgba(107,140,66,.2)';
+        this.style.color=sel?'var(--text2)':'#8fba50';
+        this.style.borderColor=sel?'#2a3f5a':'#6b8c42';
+      };
+    }
+    cal.appendChild(btn);
+  }
+  document.getElementById('announceModal').classList.add('show');
+}
+
+function closeAnnounceModal(){ document.getElementById('announceModal').classList.remove('show'); }
+
+function applyAnnounce(){
+  const selected=[...document.querySelectorAll('#announceCalendar button[data-selected="1"]')].map(b=>b.dataset.key);
+  // Remove old holidays from this month then add new ones
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  const days=daysInMonth(y,m);
+  for(let d=1;d<=days;d++) publicHolidays.delete(dateKey(y,m,d));
+  selected.forEach(k=>publicHolidays.add(k));
+  localStorage.setItem('att_holidays',JSON.stringify([...publicHolidays]));
+  closeAnnounceModal();
+  renderMonthly();
+  updateAnnounceBar();
+  showToast('🎌 '+selected.length+' টি ছুটির দিন ঘোষণা করা হয়েছে');
+}
+
+function updateAnnounceBar(){
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  const days=daysInMonth(y,m);
+  const hols=[];
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    if(publicHolidays.has(key)) hols.push(d+' '+BN_DAYS_S[dow(y,m,d)]);
+  }
+  const bar=document.getElementById('announceBar');
+  if(hols.length){
+    document.getElementById('announceText').textContent='এই মাসের ঘোষিত ছুটি: '+hols.join(', ');
+    bar.style.display='block';
+  } else {
+    bar.style.display='none';
+  }
+}
+
+function clearAnnounce(){
+  const m=parseInt(document.getElementById('monthSel').value);
+  const y=parseInt(document.getElementById('yearSel').value);
+  const days=daysInMonth(y,m);
+  for(let d=1;d<=days;d++) publicHolidays.delete(dateKey(y,m,d));
+  localStorage.setItem('att_holidays',JSON.stringify([...publicHolidays]));
+  renderMonthly();
+  updateAnnounceBar();
+  showToast('ছুটির ঘোষণা বাতিল করা হয়েছে');
+}
+
+function backupData(){
+  const backup={
+    version:1,
+    exportedAt: new Date().toISOString(),
+    empMeta,
+    allData,
+    holidays:[...publicHolidays],
+  };
+  const d=new Date();
+  const fname=`উপস্থিতি_ব্যাকআপ_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+  triggerDownload(fname, JSON.stringify(backup,null,2), 'application/json');
+  showToast('⬇️ ব্যাকআপ ডাউনলোড হচ্ছে...');
+}
+
+function restoreData(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const backup=JSON.parse(e.target.result);
+      if(!backup.empMeta||!backup.allData) throw new Error('ভুল ফরম্যাট');
+      if(!confirm('⚠️ বর্তমান সব ডেটা মুছে ব্যাকআপ লোড হবে। নিশ্চিত?')) return;
+      empMeta=backup.empMeta;
+      allData=backup.allData;
+      publicHolidays=new Set(backup.holidays||[]);
+      employees=empMeta.filter(e=>e.active).map(e=>e.name);
+      // persist
+      localStorage.setItem('att_emp_meta',JSON.stringify(empMeta));
+      localStorage.setItem('att_data',JSON.stringify(allData));
+      localStorage.setItem('att_holidays',JSON.stringify([...publicHolidays]));
+      fbSave();
+      // refresh UI
+      loadDailyDate();
+      if(document.getElementById('panel-monthly').classList.contains('active')) renderMonthly();
+      showToast('✅ ব্যাকআপ সফলভাবে লোড হয়েছে!');
+    } catch(err){
+      showToast('❌ ফাইল পড়া যায়নি: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function saveAll(){
+  if(currentDate){
+    if(!allData[currentDate]) allData[currentDate]={};
+    Object.assign(allData[currentDate],todayStatus);
+  }
+  localStorage.setItem('att_data',JSON.stringify(allData));
+  localStorage.setItem('att_emp_meta',JSON.stringify(empMeta));
+  fbSave();
+  showToast('✅ সংরক্ষণ হয়েছে!');
+}
+
+function exportCSV(){
+  const snap=JSON.parse(JSON.stringify(allData));
+  if(currentDate){if(!snap[currentDate])snap[currentDate]={};Object.assign(snap[currentDate],todayStatus);}
+  const dates=Object.keys(snap).sort();
+  if(!dates.length){showToast('⚠️ কোনো ডেটা নেই');return;}
+  const rows=[['তারিখ',...employees,'মোট উপস্থিত','মোট অনুপস্থিত','মোট ছুটি']];
+  dates.forEach(d=>{
+    const rec=snap[d]||{};let p=0,a=0,l=0;
+    const cols=employees.map(e=>{const s=rec[e]||'উ';if(s==='উ')p++;else if(s==='অ')a++;else l++;return s;});
+    rows.push([d,...cols,p,a,l]);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  triggerDownload('উপস্থিতি_'+new Date().toISOString().slice(0,10)+'.csv', csv, 'csv');
+  showToast('📥 CSV ডাউনলোড হচ্ছে...');
+}
+
+// ── MODAL ──
+function openManageModal(){
+  renderEmpMetaList();
+  document.getElementById('manageModal').classList.add('show');
+}
+function renderEmpMetaList(){
+  const container=document.getElementById('empMetaList');
+  container.innerHTML='';
+  empMeta.forEach((e,i)=>{
+    const periodsHtml=(e.periods||[]).map((p,pi)=>`
+      <div style="display:flex;gap:4px;align-items:center;margin-top:4px">
+        <input type="date" value="${p.from||''}" placeholder="যোগদান" style="flex:1" onchange="updatePeriod(${i},${pi},'from',this.value)">
+        <span style="color:var(--text2);font-size:.75rem">→</span>
+        <input type="date" value="${p.to||''}" placeholder="বিদায়" style="flex:1" onchange="updatePeriod(${i},${pi},'to',this.value)">
+        <button onclick="removePeriod(${i},${pi})" style="background:none;border:none;color:#f43f5e;cursor:pointer;font-size:1rem;padding:0 4px" title="মুছুন">✕</button>
+      </div>`).join('');
+    const div=document.createElement('div');
+    div.style.cssText=`border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;${e.active?'':'opacity:.45'}`;
+    div.innerHTML=`
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:${e.periods?.length?'8px':'0'}">
+        <input type="text" value="${e.name}" data-i="${i}" data-f="name" onchange="updateEmpField(this)" placeholder="নাম লিখুন" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem;">
+        <button class="tog-active ${e.active?'tog-on':'tog-off'}" onclick="toggleEmpActive(${i})">${e.active?'সক্রিয়':'নিষ্ক্রিয়'}</button>
+        <button onclick="addPeriod(${i})" style="background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:.72rem;font-family:'Hind Siliguri',sans-serif;white-space:nowrap">+ কর্মকাল</button>
+      </div>
+      <div id="periods_${i}">${periodsHtml}</div>`;
+    container.appendChild(div);
+  });
+}
+function addPeriod(i){
+  if(!empMeta[i].periods) empMeta[i].periods=[];
+  empMeta[i].periods.push({from:'',to:''});
+  renderEmpMetaList();
+}
+function removePeriod(i,pi){
+  empMeta[i].periods.splice(pi,1);
+  renderEmpMetaList();
+}
+function updatePeriod(i,pi,field,val){
+  empMeta[i].periods[pi][field]=val;
+}
+function updateEmpField(inp){
+  const i=parseInt(inp.dataset.i), f=inp.dataset.f;
+  empMeta[i][f]=inp.value.trim();
+}
+function toggleEmpActive(i){
+  empMeta[i].active=!empMeta[i].active;
+  renderEmpMetaList();
+}
+function addNewEmpRow(){
+  // আনলিমিটেড কর্মচারী
+  empMeta.push({name:'নতুন কর্মচারী',active:true,periods:[]});
+  renderEmpMetaList();
+  const c=document.getElementById('empMetaList'); c.scrollTop=c.scrollHeight;
+}
+function openHolidayModal(){
+  document.getElementById('holidayInput').value=[...publicHolidays].sort().join('\n');
+  document.getElementById('holidayModal').classList.add('show');
+}
+function closeHolidayModal(){document.getElementById('holidayModal').classList.remove('show');}
+function saveHolidays(){
+  const lines=document.getElementById('holidayInput').value.trim().split('\n').map(l=>l.trim()).filter(l=>/^\d{4}-\d{2}-\d{2}$/.test(l));
+  publicHolidays=new Set(lines);
+  localStorage.setItem('att_holidays',JSON.stringify(lines));
+  fbSave();
+  closeHolidayModal();
+  if(document.getElementById('panel-monthly').classList.contains('active')) renderMonthly();
+  showToast('🎌 '+lines.length+' টি ছুটির দিন সংরক্ষণ হয়েছে');
+}
+function closeModal(){document.getElementById('manageModal').classList.remove('show');}
+function saveEmployees(){
+  // collect any unsaved input changes
+  document.querySelectorAll('#empMetaList input').forEach(inp=>{ if(inp.dataset.i) empMeta[parseInt(inp.dataset.i)][inp.dataset.f]=inp.value.trim(); });
+  empMeta=empMeta.filter(e=>e.name.trim());
+  if(!empMeta.filter(e=>e.active).length){showToast('⚠️ কমপক্ষে ১ জন সক্রিয় থাকতে হবে');return;}
+  localStorage.setItem('att_emp_meta',JSON.stringify(empMeta));
+  employees=empMeta.filter(e=>e.active).map(e=>e.name);
+  fbSave();
+  closeModal();
+  loadDailyDate();
+  if(document.getElementById('panel-monthly').classList.contains('active')) renderMonthly();
+  showToast('✅ কর্মচারী তালিকা আপডেট হয়েছে');
+}
+
+function triggerDownload(filename, content, mime){
+  const a=document.createElement('a');
+  if(mime==='application/json'){
+    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(content);
+  } else {
+    // CSV with BOM
+    a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(content);
+  }
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+
+// ── REPORT ──
+const BN_MONTHS_FULL = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+
+function initReportSelects(){
+  const y = new Date().getFullYear();
+  ['rFromY','rToY'].forEach(id=>{
+    const sel=document.getElementById(id); sel.innerHTML='';
+    for(let i=2024;i<=2030;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===y)o.selected=true;sel.appendChild(o);}
+  });
+  document.getElementById('rFromM').value = new Date().getMonth()+1;
+  document.getElementById('rToM').value   = new Date().getMonth()+1;
+  // Populate employee selector
+  const empSel=document.getElementById('rEmpSel');
+  const prev=empSel.value;
+  empSel.innerHTML='<option value="__all__">— সবাই —</option>';
+  employees.forEach((e,i)=>{
+    const o=document.createElement('option');o.value=i;o.textContent=e;
+    empSel.appendChild(o);
+  });
+  empSel.value=prev||'__all__';
+}
+
+function getDateRange(){
+  const fy=+document.getElementById('rFromY').value, fm=+document.getElementById('rFromM').value;
+  const ty=+document.getElementById('rToY').value,   tm=+document.getElementById('rToM').value;
+  const dates=[];
+  let cy=fy,cm=fm;
+  while(cy<ty||(cy===ty&&cm<=tm)){
+    const days=daysInMonth(cy,cm);
+    for(let d=1;d<=days;d++){
+      if(!isOffDay(cy,cm,d)) dates.push(dateKey(cy,cm,d));
+    }
+    cm++; if(cm>12){cm=1;cy++;}
+  }
+  return {dates, fromLabel:`${BN_MONTHS_FULL[fm-1]} ${fy}`, toLabel:`${BN_MONTHS_FULL[tm-1]} ${ty}`, fy,fm,ty,tm};
+}
+
+function setQuickRange(type){
+  const now=new Date();
+  const cy=now.getFullYear(), cm=now.getMonth()+1;
+  let fy,fm,ty,tm;
+  if(type==='this_month'){fy=cy;fm=cm;ty=cy;tm=cm;}
+  else if(type==='last_month'){
+    const d=new Date(cy,cm-2,1);
+    fy=fm=ty=tm=0;
+    fy=d.getFullYear();fm=d.getMonth()+1;ty=fy;tm=fm;
+  }
+  else if(type==='this_year'){fy=cy;fm=1;ty=cy;tm=12;}
+  else if(type==='last_3'){
+    const d=new Date(cy,cm-3,1);
+    fy=d.getFullYear();fm=d.getMonth()+1;ty=cy;tm=cm;
+  }
+  else if(type==='last_6'){
+    const d=new Date(cy,cm-6,1);
+    fy=d.getFullYear();fm=d.getMonth()+1;ty=cy;tm=cm;
+  }
+  document.getElementById('rFromY').value=fy;
+  document.getElementById('rFromM').value=fm;
+  document.getElementById('rToY').value=ty;
+  document.getElementById('rToM').value=tm;
+  genReport();
+}
+
+function genReport(){
+  try{
+  const {dates,fromLabel,toLabel,fy,fm,ty,tm}=getDateRange();
+  if(!dates.length){showToast('⚠️ তারিখ পরিসর ঠিক করুন');return;}
+
+  const empSelVal=document.getElementById('rEmpSel').value;
+  const filteredEmps = empSelVal==='__all__' ? employees : [employees[+empSelVal]];
+  const isSingle = filteredEmps.length===1;
+
+  // Monthly breakdown per employee
+  const months=[];
+  {let cy=fy,cm=fm; while(cy<ty||(cy===ty&&cm<=tm)){months.push({y:cy,m:cm});cm++;if(cm>12){cm=1;cy++;}}}
+
+  // Per-employee totals
+  const empStats = filteredEmps.map(emp=>{
+    let p=0,a=0,l=0,total=0,otD=0;
+    // getEmpMonthStats দিয়ে প্রতি মাস গণনা — মাসিক টেবিলের মতো
+    months.forEach(({y:my,m:mm})=>{
+      let hasD=false;
+      for(let d=1;d<=daysInMonth(my,mm);d++){
+        const k=dateKey(my,mm,d);
+        if(allData[k]&&allData[k][emp]!=null){hasD=true;break;}
+      }
+      if(!hasD) return; // ডেটা নেই মাস বাদ
+      const ms=getEmpMonthStats(emp,my,mm);
+      if(ms.inactive) return;
+      p+=ms.p; a+=ms.a; l+=ms.l; total+=ms.wd; otD+=ms.otD;
+    });
+    // OT দিন+ঘণ্টা getEmpMonthStats থেকেই আসছে
+    const pct=total>0?Math.round(p/total*100):0;
+    let otH=0;
+    months.forEach(({y:my,m:mm})=>{
+      const ms=getEmpMonthStats(emp,my,mm);
+      if(!ms.inactive) otH+=ms.otH;
+    });
+    return {emp,p,a,l,total,pct,otD,otH};
+  });
+
+  // For single employee, compute totals directly
+  let singleTotalP=0,singleTotalA=0,singleTotalL=0,singleTotalD=0;
+  if(isSingle){
+    const emp=filteredEmps[0];
+    months.forEach(({y:my,m:mm})=>{
+      let hasD=false;
+      for(let d=1;d<=daysInMonth(my,mm);d++){
+        const k=dateKey(my,mm,d);
+        if(allData[k]&&allData[k][emp]!=null){hasD=true;break;}
+      }
+      if(!hasD) return;
+      const ms=getEmpMonthStats(emp,my,mm);
+      if(ms.inactive) return;
+      singleTotalP+=ms.p; singleTotalA+=ms.a; singleTotalL+=ms.l; singleTotalD+=ms.wd;
+    });
+  }
+  const singlePct=singleTotalD>0?Math.round(singleTotalP/singleTotalD*100):0;
+  const singleColor=singlePct>=80?'#00c9a7':singlePct>=60?'#f59e0b':'#f43f5e';
+
+  let html=`<div class="rpt-summary">
+    ${isSingle ? `
+    <div class="rpt-card"><div class="rn" style="color:#3b82f6">${singleTotalD}</div><div class="rl">মোট কর্মদিবস</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#00c9a7">${singleTotalP}</div><div class="rl">উপস্থিত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f43f5e">${singleTotalA}</div><div class="rl">অনুপস্থিত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${singleTotalL}</div><div class="rl">ছুটি</div></div>
+    <div class="rpt-card"><div class="rn" style="color:${singleColor}">${singlePct}%</div><div class="rl">উপস্থিতি হার</div></div>
+    ` : `
+    <div class="rpt-card"><div class="rn" style="color:#3b82f6">${dates.length}</div><div class="rl">মোট কর্মদিবস</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#00c9a7">${filteredEmps.length}</div><div class="rl">কর্মচারী</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#8ba3bf">${months.length}</div><div class="rl">মাস</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${fromLabel}</div><div class="rl">থেকে ${toLabel} পর্যন্ত</div></div>
+    `}
+  </div>`;
+
+  // Summary table all employees
+  html+=`<div class="rpt-table-wrap"><table class="rpt-table">
+    <thead><tr>
+      <th>#</th><th>কর্মচারীর নাম</th>
+      <th style="color:#3b82f6">মোট কর্মদিবস</th>
+      <th style="color:#00c9a7">উপস্থিত</th>
+      <th style="color:#f43f5e">অনুপস্থিত</th>
+      <th style="color:#f59e0b">ছুটি</th>
+      <th>উপস্থিতি %</th>
+      <th style="color:#a78bfa">OT দিন</th>
+      <th style="color:#c4b5fd">OT ঘণ্টা</th>
+    </tr></thead><tbody>`;
+
+  if(!isSingle){
+  empStats.forEach((s,i)=>{
+    const barW=s.pct;
+    const barColor=s.pct>=80?'#00c9a7':s.pct>=60?'#f59e0b':'#f43f5e';
+    html+=`<tr>
+      <td style="color:var(--text2)">${i+1}</td>
+      <td>${s.emp}</td>
+      <td style="color:#3b82f6;font-weight:700">${s.total}</td>
+      <td style="color:#00c9a7;font-weight:700">${s.p}</td>
+      <td style="color:#f43f5e;font-weight:700">${s.a}</td>
+      <td style="color:#f59e0b;font-weight:700">${s.l}</td>
+      <td><span style="font-weight:700;color:${barColor}">${s.pct}%</span>
+        <span style="display:inline-block;width:${barW}px;max-width:80px;height:5px;border-radius:3px;background:${barColor};vertical-align:middle;margin-left:6px"></span>
+      </td>
+      <td style="color:#a78bfa;font-weight:700">${s.otD||0}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  } // end if(!isSingle)
+
+  // Per-employee monthly detail
+  html+=`<h3 style="font-size:.9rem;color:var(--text2);margin-bottom:12px;">📋 ${isSingle?filteredEmps[0]+' — ':''} মাসওয়ারি বিবরণ</h3>`;
+  filteredEmps.forEach((emp,ei)=>{
+    let totalP=0,totalA=0,totalL=0,totalD=0;
+    let mRows='';
+    months.forEach(({y:my,m:mm})=>{
+      const ms=getEmpMonthStats(emp,my,mm);
+      if(ms.inactive){
+        mRows+=`<tr style="opacity:.3">
+          <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
+          <td colspan="6" style="color:var(--text2);font-style:italic;text-align:center">নিষ্ক্রিয়</td>
+        </tr>`;
+        return;
+      }
+      const {p,a,l,wd,otD:motD}=ms;
+      // ডেটা আছে কিনা চেক
+      let hasData=false;
+      for(let d=1;d<=daysInMonth(my,mm);d++){
+        const k=dateKey(my,mm,d);
+        if(allData[k]&&allData[k][emp]!=null){hasData=true;break;}
+      }
+      if(!hasData){
+        mRows+=`<tr style="opacity:.45">
+          <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
+          <td style="color:#3b82f6">${wd}</td>
+          <td colspan="5" style="color:var(--text2);font-style:italic;text-align:center">ডেটা নেই</td>
+        </tr>`;
+        return; // মোট থেকে বাদ
+      }
+      totalP+=p; totalA+=a; totalL+=l; totalD+=wd;
+      const pct=wd>0?Math.round(p/wd*100):0;
+      const bc=pct>=80?'#00c9a7':pct>=60?'#f59e0b':'#f43f5e';
+      mRows+=`<tr>
+        <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
+        <td style="color:#3b82f6">${wd}</td>
+        <td style="color:#00c9a7;font-weight:700">${p}</td>
+        <td style="color:#f43f5e;font-weight:700">${a}</td>
+        <td style="color:#f59e0b;font-weight:700">${l}</td>
+        <td><span style="color:${bc};font-weight:700">${pct}%</span></td>
+        <td style="color:#a78bfa;font-weight:700">${motD||'-'}</td>
+        <td style="color:#c4b5fd;font-weight:700">${ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-'}</td>
+      </tr>`;
+    });
+    const totalPct=totalD>0?Math.round(totalP/totalD*100):0;
+    const tc=totalPct>=80?'#00c9a7':totalPct>=60?'#f59e0b':'#f43f5e';
+    // Check if this employee has ANY data at all in the range
+    const empHasAnyData=dates.some(key=>allData[key]&&allData[key][emp]!==undefined);
+    const boxStyle=empHasAnyData?'':'opacity:.4;filter:grayscale(.6)';
+    const noDataBadge=empHasAnyData?'':'<span style="font-size:.72rem;background:#2a3f5a;color:var(--text2);padding:2px 8px;border-radius:12px;margin-left:8px;font-style:italic">ডেটা নেই</span>';
+    html+=`<div class="detail-box" style="${boxStyle}">
+      <h3>${emp} &nbsp;<span style="font-size:.8rem;font-weight:400;color:var(--text2)">#${ei+1}</span>${noDataBadge}</h3>
+      ${empHasAnyData ? `
+      <div class="dgrid">
+        <div class="dc"><div class="dn" style="color:#3b82f6">${totalD}</div><div class="dl">মোট কর্মদিবস</div></div>
+        <div class="dc"><div class="dn" style="color:#00c9a7">${totalP}</div><div class="dl">উপস্থিত</div></div>
+        <div class="dc"><div class="dn" style="color:#f43f5e">${totalA}</div><div class="dl">অনুপস্থিত</div></div>
+        <div class="dc"><div class="dn" style="color:#f59e0b">${totalL}</div><div class="dl">ছুটি</div></div>
+        <div class="dc"><div class="dn" style="color:${tc}">${totalPct}%</div><div class="dl">উপস্থিতি হার</div></div>
+      </div>
+      <div class="mb-wrap"><table class="mbt">
+        <thead><tr><th>মাস</th><th>কর্মদিবস</th><th style="color:#00c9a7">উপস্থিত</th><th style="color:#f43f5e">অনুপস্থিত</th><th style="color:#f59e0b">ছুটি</th><th>হার</th><th style="color:#a78bfa">OT দিন</th><th style="color:#c4b5fd">OT ঘণ্টা</th></tr></thead>
+        <tbody>${mRows}
+        <tr style="font-weight:700;background:var(--surface2)">
+          <td>সর্বমোট</td>
+          <td style="color:#3b82f6">${totalD}</td>
+          <td style="color:#00c9a7">${totalP}</td>
+          <td style="color:#f43f5e">${totalA}</td>
+          <td style="color:#f59e0b">${totalL}</td>
+          <td style="color:${tc}">${totalPct}%</td>
+          <td></td>
+          <td></td>
+        </tr></tbody>
+      </table></div>` : `<p style="color:var(--text2);font-style:italic;font-size:.85rem;padding:6px 0">এই সময়ের মধ্যে কোনো উপস্থিতির তথ্য পাওয়া যায়নি।</p>`}
+    </div>`;
+  });
+
+  document.getElementById('reportOut').innerHTML=html;
+  // store last report data for CSV
+  window._lastReportData={empStats,months,dates,fromLabel,toLabel,filteredEmps};
+  }catch(e){console.error('genReport error:',e);showToast('⚠️ রিপোর্ট error: '+e.message);}
+}
+
+function exportReportCSV(){
+  if(!window._lastReportData){showToast('⚠️ আগে রিপোর্ট দেখুন');return;}
+  const {empStats,months}=window._lastReportData;
+  const mnLabels=months.map(({y,m})=>`${BN_MONTHS_FULL[m-1]} ${y}`);
+
+  // Build rows
+  const rows=[];
+  // Header
+  const h=['কর্মচারী'];
+  mnLabels.forEach(mn=>h.push(mn+' উপস্থিত',mn+' অনুপস্থিত',mn+' ছুটি'));
+  h.push('মোট কর্মদিবস','মোট উপস্থিত','মোট অনুপস্থিত','মোট ছুটি','উপস্থিতি %');
+  rows.push(h);
+
+  const fEmps=window._lastReportData.filteredEmps||employees;
+  fEmps.forEach((emp,ei)=>{
+    const row=[emp];
+    let tp=0,ta=0,tl=0,td=0;
+    months.forEach(({y:my,m:mm})=>{
+      const mDays=daysInMonth(my,mm);
+      let p=0,a=0,l=0,wd=0;
+      for(let d=1;d<=mDays;d++){
+        if(isOffDay(my,mm,d)) continue;
+        const key=dateKey(my,mm,d);
+        if(!empActiveOnDate(emp,key)) continue;
+        wd++;
+        if(!allData[key]||allData[key][emp]===undefined||allData[key][emp]===null) continue;
+        const s=allData[key][emp];
+        if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+      }
+      tp+=p;ta+=a;tl+=l;td+=wd;
+      row.push(p,a,l);
+    });
+    const pct=td>0?Math.round(tp/td*100):0;
+    row.push(td,tp,ta,tl,pct+'%');
+    rows.push(row);
+  });
+
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  triggerDownload('রিপোর্ট_'+new Date().toISOString().slice(0,10)+'.csv', csv, 'csv');
+  showToast('📥 রিপোর্ট CSV ডাউনলোড হচ্ছে...');
+}
+
+// ── AUTH ──
+const DEFAULT_ADMIN_PW = 'admin1234';
+let isAdmin = false;
+
+function getAdminPw(){
+  return localStorage.getItem('att_admin_pw') || DEFAULT_ADMIN_PW;
+}
+function tryLogin(){
+  const pw = document.getElementById('pwInput').value;
+  if(pw === getAdminPw()){
+    isAdmin = true;
+    sessionStorage.setItem('att_session','admin');
+    document.getElementById('loginOverlay').style.display='none';
+    applyAuthUI();
+    document.getElementById('pwError').textContent='';
+  } else {
+    document.getElementById('pwError').textContent='❌ পাসওয়ার্ড ভুল!';
+    document.getElementById('pwInput').value='';
+  }
+}
+function enterViewer(){
+  isAdmin = false;
+  sessionStorage.setItem('att_session','viewer');
+  document.getElementById('loginOverlay').style.display='none';
+  applyAuthUI();
+}
+function applyAuthUI(){
+  const toolbar=document.querySelector('.toolbar');
+  if(!isAdmin){
+    // CSS দিয়ে পুরো অ্যাপ read-only
+    document.body.classList.add('viewer-mode');
+    // Viewer badge
+    if(!document.getElementById('viewerBadge')){
+      const badge=document.createElement('span');
+      badge.id='viewerBadge';
+      badge.textContent='👁️ Viewer Mode';
+      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid #fbbf24;border-radius:8px;';
+      toolbar.prepend(badge);
+    }
+    // Logout button (always clickable)
+    if(!document.getElementById('logoutBtn')){
+      const lb=document.createElement('button');
+      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
+      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
+      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
+      toolbar.prepend(lb);
+    }
+  } else {
+    document.body.classList.remove('viewer-mode');
+    // Admin badge
+    if(!document.getElementById('adminBadge')){
+      const badge=document.createElement('span');
+      badge.id='adminBadge';
+      badge.textContent='🔐 Admin';
+      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:8px;cursor:pointer';
+      badge.title='পাসওয়ার্ড পরিবর্তন করুন';
+      badge.onclick=()=>document.getElementById('changePwModal').classList.add('show');
+      toolbar.prepend(badge);
+    }
+    // Logout button
+    if(!document.getElementById('logoutBtn')){
+      const lb=document.createElement('button');
+      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
+      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
+      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
+      toolbar.prepend(lb);
+    }
+  }
+}
+function doChangePw(){
+  const old=document.getElementById('oldPw').value;
+  const n1=document.getElementById('newPw').value;
+  const n2=document.getElementById('newPw2').value;
+  const err=document.getElementById('pwChangeErr');
+  if(old!==getAdminPw()){err.textContent='❌ পুরনো পাসওয়ার্ড ভুল';return;}
+  if(n1.length<4){err.textContent='❌ কমপক্ষে ৪ অক্ষর দিন';return;}
+  if(n1!==n2){err.textContent='❌ নতুন পাসওয়ার্ড মিলছে না';return;}
+  localStorage.setItem('att_admin_pw',n1);
+  document.getElementById('changePwModal').classList.remove('show');
+  ['oldPw','newPw','newPw2'].forEach(id=>document.getElementById(id).value='');
+  err.textContent='';
+  showToast('✅ পাসওয়ার্ড পরিবর্তন হয়েছে');
+}
+function checkAuth(){
+  const sess=sessionStorage.getItem('att_session');
+  if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
+  else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
+  else{document.getElementById('loginOverlay').style.display='flex';}
+}
+
+window.onload=function(){
+  // hide overlay initially, check after init
+  document.getElementById('loginOverlay').style.display='none';
+  init();
+  checkAuth();
+};
+</script>
+<!-- Firebase scripts loaded last so DOM is ready -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  // Firebase scripts loaded — now safe to init
+  initFirebase();
+</script>
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="background:#162032;border:1px solid #2a3f5a;border-radius:16px;padding:36px 40px;min-width:300px;text-align:center">
+    <div style="font-size:2rem;margin-bottom:8px">🔐</div>
+    <h2 style="color:#e2e8f0;font-size:1.1rem;margin-bottom:4px;font-family:'Hind Siliguri',sans-serif">উপস্থিতি রেজিস্টার</h2>
+    <p style="color:#8ba3bf;font-size:.8rem;margin-bottom:20px;font-family:'Hind Siliguri',sans-serif">Admin পাসওয়ার্ড দিন অথবা Viewer হিসেবে প্রবেশ করুন</p>
+    <input type="password" id="pwInput" placeholder="পাসওয়ার্ড লিখুন..." 
+      style="width:100%;padding:10px 14px;background:#0f1923;border:1px solid #2a3f5a;border-radius:8px;color:#e2e8f0;font-family:'Hind Siliguri',sans-serif;font-size:.9rem;box-sizing:border-box;margin-bottom:12px;outline:none"
+      onkeydown="if(event.key==='Enter') tryLogin()">
+    <div id="pwError" style="color:#f43f5e;font-size:.78rem;margin-bottom:10px;min-height:18px;font-family:'Hind Siliguri',sans-serif"></div>
+    <button onclick="tryLogin()" style="width:100%;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.9rem;font-weight:700;margin-bottom:10px">🔓 Admin লগইন</button>
+    <button onclick="enterViewer()" style="width:100%;padding:10px;background:#1e2d42;color:#8ba3bf;border:1px solid #2a3f5a;border-radius:8px;cursor:pointer;font-family:'Hind Siliguri',sans-serif;font-size:.85rem">👁️ শুধু দেখব (Viewer)</button>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="overlay" id="changePwModal">
+  <div class="modal" style="max-width:380px">
+    <h3>🔑 পাসওয়ার্ড পরিবর্তন</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <input type="password" id="oldPw" placeholder="পুরনো পাসওয়ার্ড" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem">
+      <input type="password" id="newPw" placeholder="নতুন পাসওয়ার্ড" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem">
+      <input type="password" id="newPw2" placeholder="নতুন পাসওয়ার্ড আবার" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Hind Siliguri',sans-serif;font-size:.85rem">
+      <div id="pwChangeErr" style="color:#f43f5e;font-size:.78rem;min-height:16px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('changePwModal').classList.remove('show')">বাতিল</button>
+      <button class="btn btn-primary" onclick="doChangePw()">✅ পরিবর্তন করুন</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
