@@ -492,6 +492,7 @@ function empInactiveThisMonth(emp, y, m){
   return !!(allData[key]&&allData[key][emp]);
 }
 function toggleEmpMonth(emp, y, m){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key='inactive_'+dateKey(y,m,1).slice(0,7);
   if(!allData[key]) allData[key]={};
   const wasInactive=!!allData[key][emp];
@@ -602,6 +603,7 @@ function renderGrid(){
 }
 
 function setDaily(idx,s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx]; todayStatus[emp]=s;
   if(!allData[currentDate]) allData[currentDate]={};
@@ -616,6 +618,7 @@ function setDaily(idx,s){
 }
 
 function setDailyOT(idx, val){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx];
   const h=parseFloat(val)||0;
@@ -644,6 +647,7 @@ function updateStats(){
 }
 
 function markAll(s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   employees.forEach((e,i)=>{todayStatus[e]=s;if(!allData[currentDate])allData[currentDate]={};allData[currentDate][e]=s;});
   renderGrid(); updateStats();
 }
@@ -746,6 +750,7 @@ function renderMonthly(){
 }
 
 function setMonthlyOT(emp,y,m,d,val,inp){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key=dateKey(y,m,d);
   const ohKey='oth_'+key;
   const h=parseFloat(val)||0;
@@ -759,6 +764,7 @@ function setMonthlyOT(emp,y,m,d,val,inp){
 }
 
 function setFriAbs(emp,y,m,d,btn){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
   const isAbs=allData[key][emp]==='অ';
@@ -772,6 +778,7 @@ function setFriAbs(emp,y,m,d,btn){
 // toggleOT removed — oth_ keys now used for all days
 
 function setCellM(emp,y,m,d,s,btn){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
@@ -821,6 +828,7 @@ function recalcRow(emp,y,m){
 
 // Fill entire month for ONE employee
 function fillEmpMonth(emp,y,m,s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const days=daysInMonth(y,m);
   let hasExisting=false;
   for(let d=1;d<=days;d++){
@@ -841,6 +849,7 @@ function fillEmpMonth(emp,y,m,s){
 }
 
 function clearEmpMonth(emp,y,m){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const days=daysInMonth(y,m);
   for(let d=1;d<=days;d++){
     const key=dateKey(y,m,d);
@@ -857,6 +866,7 @@ function clearEmpMonth(emp,y,m){
 
 // Fill entire month for ALL employees
 function clearAllMonth(){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const m=parseInt(document.getElementById('monthSel').value);
   const y=parseInt(document.getElementById('yearSel').value);
   if(!confirm(`⚠️ ${BN_MONTHS_FULL[m-1]} ${y} — সবার ডেটা মুছে যাবে। নিশ্চিত?`)) return;
@@ -874,6 +884,7 @@ function clearAllMonth(){
 }
 
 function fillMonthAll(s){
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const m=parseInt(document.getElementById('monthSel').value);
   const y=parseInt(document.getElementById('yearSel').value);
   if(!confirm(`⚠️ ${BN_MONTHS_FULL[m-1]} ${y} — সবার জন্য পুরো মাস পূরণ হবে। বিদ্যমান ডেটা মুছে যাবে। নিশ্চিত?`)) return;
