@@ -1538,7 +1538,7 @@ function checkAuth(){
   const sess=sessionStorage.getItem('att_session');
   if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
   else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
-  else{document.getElementById('loginOverlay').style.display='flex';}
+  else{document.getElementById('loginOverlay').style.cssText='display:flex;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px';}
 }
 
 window.onload=function(){
@@ -1554,7 +1554,7 @@ window.onload=function(){
     document.body.classList.add('viewer-mode');
   } else {
     // session নেই — login overlay দেখাও
-    document.getElementById('loginOverlay').style.display='flex';
+    document.getElementById('loginOverlay').style.cssText='display:flex;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px';
     return; // init এর দরকার নেই এখনই
   }
 
@@ -1571,7 +1571,7 @@ window.onload=function(){
 </script>
 
 <!-- Login Overlay -->
-<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="background:#162032;border:1px solid #2a3f5a;border-radius:16px;padding:36px 40px;min-width:300px;text-align:center">
     <div style="font-size:2rem;margin-bottom:8px">🔐</div>
     <h2 style="color:#e2e8f0;font-size:1.1rem;margin-bottom:4px;font-family:'Hind Siliguri',sans-serif">উপস্থিতি রেজিস্টার</h2>
