@@ -1235,36 +1235,37 @@ function setQuickRange(type){
 }
 
 function getEmpDateRangeStats(emp, dates, fy, fm, fd, ty, tm, td){
-  // দিন-ভিত্তিক সঠিক হিসাব — dates array তে যেসব তারিখ আছে সেগুলো দিয়ে
-  let p=0,a=0,l=0,wd=0,otD=0,otH=0;
+  // getEmpMonthStats এর মতো একই লজিক — মাসিক টেবিলের সাথে মিলবে
   const fromStr=dateKey(fy,fm,fd);
   const toStr=dateKey(ty,tm,td);
-  // সব দিন loop করি from→to
-  let cy=fy,cm=fm,cd=fd;
-  const endStr=toStr;
+  let p=0,a=0,l=0,wd=0,otD=0,otH=0;
+  // মাস ধরে ধরে loop করো — getEmpMonthStats এর মতো
+  let cy=fy,cm=fm;
   while(true){
-    const key=dateKey(cy,cm,cd);
-    if(key>endStr) break;
-    const isOff=isOffDay(cy,cm,cd);
-    const isActive=empActiveOnDate(emp,key);
-    const isInactiveM=empInactiveThisMonth(emp,cy,cm);
-    if(!isOff && isActive && !isInactiveM){
-      wd++;
-      const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
-      if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+    const mStr=`${cy}-${String(cm).padStart(2,'0')}`;
+    const fromMStr=`${fy}-${String(fm).padStart(2,'0')}`;
+    const toMStr=`${ty}-${String(tm).padStart(2,'0')}`;
+    if(mStr>toMStr) break;
+    const inactive=empInactiveThisMonth(emp,cy,cm);
+    if(!inactive){
+      const dStart=(mStr===fromMStr)?fd:1;
+      const dEnd=(mStr===toMStr)?td:daysInMonth(cy,cm);
+      for(let d=dStart;d<=dEnd;d++){
+        const key=dateKey(cy,cm,d);
+        if(!isOffDay(cy,cm,d)&&empActiveOnDate(emp,key)){
+          wd++;
+          const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
+          if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+        }
+        const ohKey='oth_'+key;
+        if(allData[ohKey]&&allData[ohKey][emp]>0){
+          otH+=allData[ohKey][emp]; otD++;
+        }
+      }
     }
-    // শুক্রবার অনুপস্থিত
-    if(isWE(cy,cm,cd)&&allData[key]&&allData[key][emp]==='অ'&&!isInactiveM) a++;
-    // OT ঘণ্টা
-    const ohKey='oth_'+key;
-    if(allData[ohKey]&&allData[ohKey][emp]>0&&!isInactiveM){
-      otH+=allData[ohKey][emp];
-      otD++;
-    }
-    // পরের দিন
-    cd++;
-    const maxD=daysInMonth(cy,cm);
-    if(cd>maxD){cd=1;cm++;if(cm>12){cm=1;cy++;}}
+    // পরের মাস
+    cm++; if(cm>12){cm=1;cy++;}
+    if(cy>ty||(cy===ty&&cm>tm+1)) break;
   }
   return {p,a,l,wd,otD,otH};
 }
