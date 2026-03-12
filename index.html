@@ -136,6 +136,19 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
 .mbt th{background:var(--surface2);color:var(--text2);padding:7px 10px;text-align:center;font-weight:600;border:1px solid var(--border);}
 .mbt td{padding:6px 10px;border:1px solid var(--border);text-align:center;background:var(--surface);}
 .mbt td:first-child{text-align:left;font-weight:500;}
+/* Login overlay */
+#loginOverlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(10,16,25,.97);
+  z-index:99999;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:16px;
+}
+#loginOverlay.show{ display:flex; }
+/* Viewer mode — isAdmin চেক JS এ হয়, CSS block নেই */
 </style>
 </head>
 <body>
@@ -393,10 +406,12 @@ function fbListen(){
       localStorage.setItem('att_holidays',JSON.stringify(d.holidays)); 
     }
     // refresh current view silently
+    // active panel রিফ্রেশ
     const activePanel=document.querySelector('.panel.active');
     if(activePanel){
       if(activePanel.id==='panel-monthly') renderMonthly();
       else if(activePanel.id==='panel-daily') loadDailyDate();
+      else if(activePanel.id==='panel-report') genReport();
     }
     showToast('🔄 ডেটা আপডেট হয়েছে');
   });
@@ -485,22 +500,19 @@ function init(){
 }
 function initUI(){
   const ySel=document.getElementById('yearSel');
+  if(ySel) ySel.innerHTML='';
   const y=new Date().getFullYear();
-  for(let i=2024;i<=2030;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===y)o.selected=true;ySel.appendChild(o);}
+  for(let i=2024;i<=2030;i++){
+    const o=document.createElement('option');
+    o.value=i; o.textContent=i;
+    if(i===y) o.selected=true;
+    ySel.appendChild(o);
+  }
   document.getElementById('monthSel').value=new Date().getMonth()+1;
   document.getElementById('datePicker').value=getToday();
   currentDate=getToday();
   loadDailyDate();
   setInterval(saveAll, 30000);
-  // পাসওয়ার্ড মোড চেক
-  if(localStorage.getItem('att_edit_mode')==='1'){
-    isEditMode=true;
-    hideLoginOverlay();
-    applyMode();
-  } else {
-    showLoginOverlay();
-    applyMode();
-  }
 }
 
 function switchTab(t){
@@ -547,7 +559,7 @@ function renderGrid(){
 
 function setDaily(idx,s){
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const emp=employees[idx]; todayStatus[emp]=s;
   if(!allData[currentDate]) allData[currentDate]={};
   allData[currentDate][emp]=s;
@@ -562,7 +574,7 @@ function setDaily(idx,s){
 
 function setDailyOT(idx, val){
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const emp=employees[idx];
   const h=parseFloat(val)||0;
   if(h>0){ todayOT[emp]=h; } else { delete todayOT[emp]; }
@@ -722,7 +734,7 @@ function setFriAbs(emp,y,m,d,btn){
 
 function setCellM(emp,y,m,d,s,btn){
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
   allData[key][emp]=s;
@@ -1449,77 +1461,72 @@ function getAdminPw(){
   return localStorage.getItem('att_admin_pw') || DEFAULT_ADMIN_PW;
 }
 function startApp(){
-  // লগইনের পরে Firebase লোড করে UI শুরু করো
   showToast('⏳ ডেটা লোড হচ্ছে...');
   fbLoad(()=>{
     initUI();
-    setTimeout(fbListen, 2000);
+    // Firebase ডেটা দিয়ে monthly table রেন্ডার করো
+    renderMonthly();
     applyAuthUI();
+    // Realtime sync — নতুন ডেটা এলে UI আপডেট হবে
+    fbListen();
   });
 }
 function tryLogin(){
-  const pw = document.getElementById('pwInput').value;
-  if(pw === getAdminPw()){
-    isAdmin = true;
+  const pwEl=document.getElementById('pwInput');
+  const errEl=document.getElementById('pwError');
+  const pw=pwEl?pwEl.value:'';
+  if(pw===getAdminPw()){
+    isAdmin=true;
     sessionStorage.setItem('att_session','admin');
-    document.getElementById('loginOverlay').style.display='none';
-    document.getElementById('pwError').textContent='';
+    
+    document.getElementById('loginOverlay').classList.remove('show');
+    if(errEl) errEl.textContent='';
     startApp();
   } else {
-    document.getElementById('pwError').textContent='❌ পাসওয়ার্ড ভুল!';
-    document.getElementById('pwInput').value='';
+    if(errEl) errEl.textContent='❌ পাসওয়ার্ড ভুল!';
+    if(pwEl) pwEl.value='';
   }
 }
+
 function enterViewer(){
-  isAdmin = false;
+  isAdmin=false;
   sessionStorage.setItem('att_session','viewer');
-  document.body.classList.add('viewer-mode');
-  document.getElementById('loginOverlay').style.display='none';
+  
+  document.getElementById('loginOverlay').classList.remove('show');
   startApp();
 }
+
 function applyAuthUI(){
   const toolbar=document.querySelector('.toolbar');
-  if(!isAdmin){
-    // CSS দিয়ে পুরো অ্যাপ read-only
-    document.body.classList.add('viewer-mode');
-    // Viewer badge
-    if(!document.getElementById('viewerBadge')){
-      const badge=document.createElement('span');
-      badge.id='viewerBadge';
-      badge.textContent='👁️ Viewer Mode';
-      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid #fbbf24;border-radius:8px;';
-      toolbar.prepend(badge);
-    }
-    // Logout button (always clickable)
-    if(!document.getElementById('logoutBtn')){
-      const lb=document.createElement('button');
-      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
-      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
-      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
-      toolbar.prepend(lb);
-    }
+  if(!toolbar) return;
+  // আগের badge সরাও
+  ['adminBadge','viewerBadge','logoutBtn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.remove();
+  });
+  if(isAdmin){
+    const badge=document.createElement('span');
+    badge.id='adminBadge';
+    badge.textContent='🔐 Admin';
+    badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:8px;cursor:pointer';
+    badge.onclick=()=>document.getElementById('changePwModal').classList.add('show');
+    toolbar.prepend(badge);
   } else {
-    document.body.classList.remove('viewer-mode');
-    // Admin badge
-    if(!document.getElementById('adminBadge')){
-      const badge=document.createElement('span');
-      badge.id='adminBadge';
-      badge.textContent='🔐 Admin';
-      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:8px;cursor:pointer';
-      badge.title='পাসওয়ার্ড পরিবর্তন করুন';
-      badge.onclick=()=>document.getElementById('changePwModal').classList.add('show');
-      toolbar.prepend(badge);
-    }
-    // Logout button
-    if(!document.getElementById('logoutBtn')){
-      const lb=document.createElement('button');
-      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
-      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
-      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
-      toolbar.prepend(lb);
-    }
+    const badge=document.createElement('span');
+    badge.id='viewerBadge';
+    badge.textContent='👁️ Viewer';
+    badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid #fbbf24;border-radius:8px;';
+    toolbar.prepend(badge);
   }
+  const lb=document.createElement('button');
+  lb.id='logoutBtn';
+  lb.className='btn btn-secondary logout-btn';
+  lb.style.fontSize='.75rem';
+  lb.textContent='🚪 লগআউট';
+  lb.onclick=()=>{ sessionStorage.removeItem('att_session'); location.reload(); };
+  toolbar.prepend(lb);
 }
+
 function doChangePw(){
   const old=document.getElementById('oldPw').value;
   const n1=document.getElementById('newPw').value;
@@ -1536,42 +1543,36 @@ function doChangePw(){
 }
 function checkAuth(){
   const sess=sessionStorage.getItem('att_session');
-  if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
-  else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
-  else{document.getElementById('loginOverlay').style.cssText='display:flex;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px';}
+  if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').classList.remove('show');applyAuthUI();}
+  else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').classList.remove('show');applyAuthUI();}
+  else{document.getElementById('loginOverlay').classList.add('show');}
 }
 
 window.onload=function(){
-  document.getElementById('loginOverlay').style.display='none';
-
-  // সবার আগে isAdmin সেট করো — যাতে fbLoad callback এ সঠিক মান থাকে
   const sess=sessionStorage.getItem('att_session');
   if(sess==='admin'){
     isAdmin=true;
-    document.body.classList.remove('viewer-mode');
+    document.getElementById('loginOverlay').classList.remove('show');
+    startApp();
   } else if(sess==='viewer'){
     isAdmin=false;
-    document.body.classList.add('viewer-mode');
+    document.getElementById('loginOverlay').classList.remove('show');
+    startApp(); // startApp এর পরে applyAuthUI তে viewer-mode লাগবে
   } else {
-    // session নেই — login overlay দেখাও
-    document.getElementById('loginOverlay').style.cssText='display:flex;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px';
-    return; // init এর দরকার নেই এখনই
+    isAdmin=false;
+    document.getElementById('loginOverlay').classList.add('show');
   }
-
-  // Firebase লোড + UI init
-  startApp();
 };
 </script>
-<!-- Firebase scripts loaded last so DOM is ready -->
+
+
+<!-- Firebase — সবার শেষে লোড হবে -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script>
-  // Firebase scripts loaded — now safe to init
-  initFirebase();
-</script>
+<script>initFirebase();</script>
 
 <!-- Login Overlay -->
-<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+<div id="loginOverlay">
   <div style="background:#162032;border:1px solid #2a3f5a;border-radius:16px;padding:36px 40px;min-width:300px;text-align:center">
     <div style="font-size:2rem;margin-bottom:8px">🔐</div>
     <h2 style="color:#e2e8f0;font-size:1.1rem;margin-bottom:4px;font-family:'Hind Siliguri',sans-serif">উপস্থিতি রেজিস্টার</h2>
