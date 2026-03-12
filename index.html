@@ -1507,14 +1507,23 @@ let isAdmin = false;
 function getAdminPw(){
   return localStorage.getItem('att_admin_pw') || DEFAULT_ADMIN_PW;
 }
+function startApp(){
+  // লগইনের পরে Firebase লোড করে UI শুরু করো
+  showToast('⏳ ডেটা লোড হচ্ছে...');
+  fbLoad(()=>{
+    initUI();
+    setTimeout(fbListen, 2000);
+    applyAuthUI();
+  });
+}
 function tryLogin(){
   const pw = document.getElementById('pwInput').value;
   if(pw === getAdminPw()){
     isAdmin = true;
     sessionStorage.setItem('att_session','admin');
     document.getElementById('loginOverlay').style.display='none';
-    applyAuthUI();
     document.getElementById('pwError').textContent='';
+    startApp();
   } else {
     document.getElementById('pwError').textContent='❌ পাসওয়ার্ড ভুল!';
     document.getElementById('pwInput').value='';
@@ -1523,8 +1532,9 @@ function tryLogin(){
 function enterViewer(){
   isAdmin = false;
   sessionStorage.setItem('att_session','viewer');
+  document.body.classList.add('viewer-mode');
   document.getElementById('loginOverlay').style.display='none';
-  applyAuthUI();
+  startApp();
 }
 function applyAuthUI(){
   const toolbar=document.querySelector('.toolbar');
@@ -1608,11 +1618,7 @@ window.onload=function(){
   }
 
   // Firebase লোড + UI init
-  fbLoad(()=>{
-    initUI();
-    setTimeout(fbListen, 2000);
-    applyAuthUI(); // badge ও logout button যোগ
-  });
+  startApp();
 };
 </script>
 <!-- Firebase scripts loaded last so DOM is ready -->
