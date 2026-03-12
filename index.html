@@ -1284,6 +1284,41 @@ function setQuickRange(type){
   genReport();
 }
 
+function getEmpDateRangeStats(emp, dates, fy, fm, fd, ty, tm, td){
+  // দিন-ভিত্তিক সঠিক হিসাব — dates array তে যেসব তারিখ আছে সেগুলো দিয়ে
+  let p=0,a=0,l=0,wd=0,otD=0,otH=0;
+  const fromStr=dateKey(fy,fm,fd);
+  const toStr=dateKey(ty,tm,td);
+  // সব দিন loop করি from→to
+  let cy=fy,cm=fm,cd=fd;
+  const endStr=toStr;
+  while(true){
+    const key=dateKey(cy,cm,cd);
+    if(key>endStr) break;
+    const isOff=isOffDay(cy,cm,cd);
+    const isActive=empActiveOnDate(emp,key);
+    const isInactiveM=empInactiveThisMonth(emp,cy,cm);
+    if(!isOff && isActive && !isInactiveM){
+      wd++;
+      const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
+      if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+    }
+    // শুক্রবার অনুপস্থিত
+    if(isWE(cy,cm,cd)&&allData[key]&&allData[key][emp]==='অ'&&!isInactiveM) a++;
+    // OT ঘণ্টা
+    const ohKey='oth_'+key;
+    if(allData[ohKey]&&allData[ohKey][emp]>0&&!isInactiveM){
+      otH+=allData[ohKey][emp];
+      otD++;
+    }
+    // পরের দিন
+    cd++;
+    const maxD=daysInMonth(cy,cm);
+    if(cd>maxD){cd=1;cm++;if(cm>12){cm=1;cy++;}}
+  }
+  return {p,a,l,wd,otD,otH};
+}
+
 function genReport(){
   try{
   const range=getDateRange();
@@ -1295,72 +1330,40 @@ function genReport(){
   const filteredEmps = empSelVal==='__all__' ? employees : [employees[+empSelVal]];
   const isSingle = filteredEmps.length===1;
 
-  // months — getDateRange() থেকে আসে
-
-  // Per-employee totals
+  // প্রতিটি কর্মচারীর stats — সঠিক date range দিয়ে
   const empStats = filteredEmps.map(emp=>{
-    let p=0,a=0,l=0,total=0,otD=0;
-    // getEmpMonthStats দিয়ে প্রতি মাস গণনা — মাসিক টেবিলের মতো
-    months.forEach(({y:my,m:mm})=>{
-      let hasD=false;
-      for(let d=1;d<=daysInMonth(my,mm);d++){
-        const k=dateKey(my,mm,d);
-        if(allData[k]&&allData[k][emp]!=null){hasD=true;break;}
-      }
-      if(!hasD) return; // ডেটা নেই মাস বাদ
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(ms.inactive) return;
-      p+=ms.p; a+=ms.a; l+=ms.l; total+=ms.wd; otD+=ms.otD;
-    });
-    // OT দিন+ঘণ্টা getEmpMonthStats থেকেই আসছে
-    const pct=total>0?Math.round(p/total*100):0;
-    let otH=0;
-    months.forEach(({y:my,m:mm})=>{
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(!ms.inactive) otH+=ms.otH;
-    });
-    return {emp,p,a,l,total,pct,otD,otH};
+    const st=getEmpDateRangeStats(emp,dates,fy,fm,fd,ty,tm,td);
+    const pct=st.wd>0?Math.round(st.p/st.wd*100):0;
+    return {emp,...st,total:st.wd,pct};
   });
 
-  // For single employee, compute totals directly
-  let singleTotalP=0,singleTotalA=0,singleTotalL=0,singleTotalD=0;
-  if(isSingle){
-    const emp=filteredEmps[0];
-    months.forEach(({y:my,m:mm})=>{
-      let hasD=false;
-      for(let d=1;d<=daysInMonth(my,mm);d++){
-        const k=dateKey(my,mm,d);
-        if(allData[k]&&allData[k][emp]!=null){hasD=true;break;}
-      }
-      if(!hasD) return;
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(ms.inactive) return;
-      singleTotalP+=ms.p; singleTotalA+=ms.a; singleTotalL+=ms.l; singleTotalD+=ms.wd;
-    });
-  }
-  const singlePct=singleTotalD>0?Math.round(singleTotalP/singleTotalD*100):0;
+  const singleSt = isSingle?empStats[0]:{};
+  const singlePct = isSingle?singleSt.pct:0;
   const singleColor=singlePct>=80?'#00c9a7':singlePct>=60?'#f59e0b':'#f43f5e';
 
   let html=`<div class="rpt-summary">
     ${isSingle ? `
-    <div class="rpt-card"><div class="rn" style="color:#3b82f6">${singleTotalD}</div><div class="rl">মোট কর্মদিবস</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#00c9a7">${singleTotalP}</div><div class="rl">উপস্থিত</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#f43f5e">${singleTotalA}</div><div class="rl">অনুপস্থিত</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${singleTotalL}</div><div class="rl">ছুটি</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#3b82f6">${singleSt.total}</div><div class="rl">মোট কর্মদিবস</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#00c9a7">${singleSt.p}</div><div class="rl">উপস্থিত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f43f5e">${singleSt.a}</div><div class="rl">অনুপস্থিত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${singleSt.l}</div><div class="rl">ছুটি</div></div>
     <div class="rpt-card"><div class="rn" style="color:${singleColor}">${singlePct}%</div><div class="rl">উপস্থিতি হার</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#a78bfa">${singleSt.otD||0}</div><div class="rl">OT দিন</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#c4b5fd">${singleSt.otH>0?(singleSt.otH%1===0?singleSt.otH+'h':singleSt.otH.toFixed(1)+'h'):'-'}</div><div class="rl">OT ঘণ্টা</div></div>
     ` : `
     <div class="rpt-card"><div class="rn" style="color:#3b82f6">${dates.length}</div><div class="rl">মোট কর্মদিবস</div></div>
     <div class="rpt-card"><div class="rn" style="color:#00c9a7">${filteredEmps.length}</div><div class="rl">কর্মচারী</div></div>
     <div class="rpt-card"><div class="rn" style="color:#8ba3bf">${months.length}</div><div class="rl">মাস</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${fromLabel}</div><div class="rl">থেকে ${toLabel} পর্যন্ত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${fromLabel} → ${toLabel}</div><div class="rl">তারিখ পরিসর</div></div>
     `}
   </div>`;
 
-  // Summary table all employees
-  html+=`<div class="rpt-table-wrap"><table class="rpt-table">
+  // সবার সারসংক্ষেপ টেবিল
+  if(!isSingle){
+    html+=`<div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr>
       <th>#</th><th>কর্মচারীর নাম</th>
-      <th style="color:#3b82f6">মোট কর্মদিবস</th>
+      <th style="color:#3b82f6">কর্মদিবস</th>
       <th style="color:#00c9a7">উপস্থিত</th>
       <th style="color:#f43f5e">অনুপস্থিত</th>
       <th style="color:#f59e0b">ছুটি</th>
@@ -1368,108 +1371,92 @@ function genReport(){
       <th style="color:#a78bfa">OT দিন</th>
       <th style="color:#c4b5fd">OT ঘণ্টা</th>
     </tr></thead><tbody>`;
+    empStats.forEach((s,i)=>{
+      const barColor=s.pct>=80?'#00c9a7':s.pct>=60?'#f59e0b':'#f43f5e';
+      const otHDisp=s.otH>0?(s.otH%1===0?s.otH+'h':s.otH.toFixed(1)+'h'):'-';
+      html+=`<tr>
+        <td style="color:var(--text2)">${i+1}</td>
+        <td>${s.emp}</td>
+        <td style="color:#3b82f6;font-weight:700">${s.total}</td>
+        <td style="color:#00c9a7;font-weight:700">${s.p}</td>
+        <td style="color:#f43f5e;font-weight:700">${s.a}</td>
+        <td style="color:#f59e0b;font-weight:700">${s.l}</td>
+        <td><span style="font-weight:700;color:${barColor}">${s.pct}%</span>
+          <span style="display:inline-block;width:${s.pct}px;max-width:80px;height:5px;border-radius:3px;background:${barColor};vertical-align:middle;margin-left:6px"></span>
+        </td>
+        <td style="color:#a78bfa;font-weight:700">${s.otD||0}</td>
+        <td style="color:#c4b5fd;font-weight:700">${otHDisp}</td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
 
-  if(!isSingle){
-  empStats.forEach((s,i)=>{
-    const barW=s.pct;
-    const barColor=s.pct>=80?'#00c9a7':s.pct>=60?'#f59e0b':'#f43f5e';
-    html+=`<tr>
-      <td style="color:var(--text2)">${i+1}</td>
-      <td>${s.emp}</td>
-      <td style="color:#3b82f6;font-weight:700">${s.total}</td>
-      <td style="color:#00c9a7;font-weight:700">${s.p}</td>
-      <td style="color:#f43f5e;font-weight:700">${s.a}</td>
-      <td style="color:#f59e0b;font-weight:700">${s.l}</td>
-      <td><span style="font-weight:700;color:${barColor}">${s.pct}%</span>
-        <span style="display:inline-block;width:${barW}px;max-width:80px;height:5px;border-radius:3px;background:${barColor};vertical-align:middle;margin-left:6px"></span>
-      </td>
-      <td style="color:#a78bfa;font-weight:700">${s.otD||0}</td>
-    </tr>`;
-  });
-  html+=`</tbody></table></div>`;
-  } // end if(!isSingle)
-
-  // Per-employee monthly detail
-  html+=`<h3 style="font-size:.9rem;color:var(--text2);margin-bottom:12px;">📋 ${isSingle?filteredEmps[0]+' — ':''} মাসওয়ারি বিবরণ</h3>`;
+  // মাসওয়ারি বিবরণ — প্রতি মাসের ভেতরে date range মেনে
+  html+=`<h3 style="font-size:.9rem;color:var(--text2);margin:16px 0 12px;">📋 ${isSingle?filteredEmps[0]+' — ':''} মাসওয়ারি বিবরণ</h3>`;
   filteredEmps.forEach((emp,ei)=>{
     let totalP=0,totalA=0,totalL=0,totalD=0;
     let mRows='';
     months.forEach(({y:my,m:mm})=>{
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(ms.inactive){
-        mRows+=`<tr style="opacity:.3">
-          <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
-          <td colspan="6" style="color:var(--text2);font-style:italic;text-align:center">নিষ্ক্রিয়</td>
-        </tr>`;
+      const isInactiveM=empInactiveThisMonth(emp,my,mm);
+      if(isInactiveM){
+        mRows+=`<tr style="opacity:.3"><td>${BN_MONTHS_FULL[mm-1]} ${my}</td><td colspan="7" style="text-align:center;font-style:italic;color:var(--text2)">নিষ্ক্রিয়</td></tr>`;
         return;
       }
-      const {p,a,l,wd,otD:motD}=ms;
-      // ডেটা আছে কিনা চেক
+      // এই মাসের date range — শুরু ও শেষ দিন বের করো
+      const mStartD=(my===fy&&mm===fm)?fd:1;
+      const mEndD=(my===ty&&mm===tm)?td:daysInMonth(my,mm);
+      const ms=getEmpDateRangeStats(emp,dates,my,mm,mStartD,my,mm,mEndD);
+      // ডেটা আছে কিনা চেক (শুধু range এর মধ্যে)
       let hasData=false;
-      for(let d=1;d<=daysInMonth(my,mm);d++){
+      for(let d=mStartD;d<=mEndD;d++){
         const k=dateKey(my,mm,d);
         if(allData[k]&&allData[k][emp]!=null){hasData=true;break;}
       }
       if(!hasData){
-        mRows+=`<tr style="opacity:.45">
-          <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
-          <td style="color:#3b82f6">${wd}</td>
-          <td colspan="5" style="color:var(--text2);font-style:italic;text-align:center">ডেটা নেই</td>
-        </tr>`;
-        return; // মোট থেকে বাদ
+        mRows+=`<tr style="opacity:.45"><td>${BN_MONTHS_FULL[mm-1]} ${my}</td><td style="color:#3b82f6">${ms.wd}</td><td colspan="6" style="text-align:center;font-style:italic;color:var(--text2)">ডেটা নেই</td></tr>`;
+        return;
       }
-      totalP+=p; totalA+=a; totalL+=l; totalD+=wd;
-      const pct=wd>0?Math.round(p/wd*100):0;
+      totalP+=ms.p; totalA+=ms.a; totalL+=ms.l; totalD+=ms.wd;
+      const pct=ms.wd>0?Math.round(ms.p/ms.wd*100):0;
       const bc=pct>=80?'#00c9a7':pct>=60?'#f59e0b':'#f43f5e';
+      const otHDisp=ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-';
       mRows+=`<tr>
         <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
-        <td style="color:#3b82f6">${wd}</td>
-        <td style="color:#00c9a7;font-weight:700">${p}</td>
-        <td style="color:#f43f5e;font-weight:700">${a}</td>
-        <td style="color:#f59e0b;font-weight:700">${l}</td>
+        <td style="color:#3b82f6">${ms.wd}</td>
+        <td style="color:#00c9a7;font-weight:700">${ms.p}</td>
+        <td style="color:#f43f5e;font-weight:700">${ms.a}</td>
+        <td style="color:#f59e0b;font-weight:700">${ms.l}</td>
         <td><span style="color:${bc};font-weight:700">${pct}%</span></td>
-        <td style="color:#a78bfa;font-weight:700">${motD||'-'}</td>
-        <td style="color:#c4b5fd;font-weight:700">${ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-'}</td>
+        <td style="color:#a78bfa;font-weight:700">${ms.otD||'-'}</td>
+        <td style="color:#c4b5fd;font-weight:700">${otHDisp}</td>
       </tr>`;
     });
     const totalPct=totalD>0?Math.round(totalP/totalD*100):0;
     const tc=totalPct>=80?'#00c9a7':totalPct>=60?'#f59e0b':'#f43f5e';
-    // Check if this employee has ANY data at all in the range
-    const empHasAnyData=dates.some(key=>allData[key]&&allData[key][emp]!==undefined);
-    const boxStyle=empHasAnyData?'':'opacity:.4;filter:grayscale(.6)';
-    const noDataBadge=empHasAnyData?'':'<span style="font-size:.72rem;background:#2a3f5a;color:var(--text2);padding:2px 8px;border-radius:12px;margin-left:8px;font-style:italic">ডেটা নেই</span>';
-    html+=`<div class="detail-box" style="${boxStyle}">
-      <h3>${emp} &nbsp;<span style="font-size:.8rem;font-weight:400;color:var(--text2)">#${ei+1}</span>${noDataBadge}</h3>
-      ${empHasAnyData ? `
-      <div class="dgrid">
-        <div class="dc"><div class="dn" style="color:#3b82f6">${totalD}</div><div class="dl">মোট কর্মদিবস</div></div>
-        <div class="dc"><div class="dn" style="color:#00c9a7">${totalP}</div><div class="dl">উপস্থিত</div></div>
-        <div class="dc"><div class="dn" style="color:#f43f5e">${totalA}</div><div class="dl">অনুপস্থিত</div></div>
-        <div class="dc"><div class="dn" style="color:#f59e0b">${totalL}</div><div class="dl">ছুটি</div></div>
-        <div class="dc"><div class="dn" style="color:${tc}">${totalPct}%</div><div class="dl">উপস্থিতি হার</div></div>
-      </div>
-      <div class="mb-wrap"><table class="mbt">
-        <thead><tr><th>মাস</th><th>কর্মদিবস</th><th style="color:#00c9a7">উপস্থিত</th><th style="color:#f43f5e">অনুপস্থিত</th><th style="color:#f59e0b">ছুটি</th><th>হার</th><th style="color:#a78bfa">OT দিন</th><th style="color:#c4b5fd">OT ঘণ্টা</th></tr></thead>
-        <tbody>${mRows}
-        <tr style="font-weight:700;background:var(--surface2)">
-          <td>সর্বমোট</td>
-          <td style="color:#3b82f6">${totalD}</td>
-          <td style="color:#00c9a7">${totalP}</td>
-          <td style="color:#f43f5e">${totalA}</td>
+    if(!isSingle) html+=`<h4 style="font-size:.82rem;color:var(--text2);margin:14px 0 6px;">${emp}</h4>`;
+    html+=`<div class="rpt-table-wrap"><table class="rpt-table">
+      <thead><tr>
+        <th>মাস</th><th style="color:#3b82f6">কর্মদিবস</th>
+        <th style="color:#00c9a7">উপস্থিত</th><th style="color:#f43f5e">অনুপস্থিত</th>
+        <th style="color:#f59e0b">ছুটি</th><th>হার</th>
+        <th style="color:#a78bfa">OT দিন</th><th style="color:#c4b5fd">OT ঘণ্টা</th>
+      </tr></thead>
+      <tbody>${mRows}
+        <tr style="background:var(--surface2);font-weight:700">
+          <td>মোট</td><td style="color:#3b82f6">${totalD}</td>
+          <td style="color:#00c9a7">${totalP}</td><td style="color:#f43f5e">${totalA}</td>
           <td style="color:#f59e0b">${totalL}</td>
           <td style="color:${tc}">${totalPct}%</td>
-          <td></td>
-          <td></td>
-        </tr></tbody>
-      </table></div>` : `<p style="color:var(--text2);font-style:italic;font-size:.85rem;padding:6px 0">এই সময়ের মধ্যে কোনো উপস্থিতির তথ্য পাওয়া যায়নি।</p>`}
-    </div>`;
+          <td></td><td></td>
+        </tr>
+      </tbody></table></div>`;
   });
 
   document.getElementById('reportOut').innerHTML=html;
-  // store last report data for CSV
-  window._lastReportData={empStats,months,dates,fromLabel,toLabel,filteredEmps};
+  window._lastReportData={empStats,dates,fromLabel,toLabel,months,isSingle,filteredEmps,fy,fm,fd,ty,tm,td};
   }catch(e){console.error('genReport error:',e);showToast('⚠️ রিপোর্ট error: '+e.message);}
 }
+
 
 function exportReportCSV(){
   if(!window._lastReportData){showToast('⚠️ আগে রিপোর্ট দেখুন');return;}
