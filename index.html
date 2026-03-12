@@ -559,7 +559,6 @@ function renderGrid(){
 
 function setDaily(idx,s){
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const emp=employees[idx]; todayStatus[emp]=s;
   if(!allData[currentDate]) allData[currentDate]={};
   allData[currentDate][emp]=s;
@@ -573,7 +572,6 @@ function setDaily(idx,s){
 }
 
 function setDailyOT(idx, val){
-  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
   const emp=employees[idx];
   const h=parseFloat(val)||0;
@@ -733,8 +731,7 @@ function setFriAbs(emp,y,m,d,btn){
 // toggleOT removed — oth_ keys now used for all days
 
 function setCellM(emp,y,m,d,s,btn){
-  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
+  if(!isAdmin){showToast('🔒 Admin লগইন করুন (isAdmin=false)');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
   allData[key][emp]=s;
@@ -1478,9 +1475,9 @@ function tryLogin(){
   if(pw===getAdminPw()){
     isAdmin=true;
     sessionStorage.setItem('att_session','admin');
-    
     document.getElementById('loginOverlay').classList.remove('show');
     if(errEl) errEl.textContent='';
+    showToast('✅ Admin লগইন সফল — isAdmin='+isAdmin);
     startApp();
   } else {
     if(errEl) errEl.textContent='❌ পাসওয়ার্ড ভুল!';
