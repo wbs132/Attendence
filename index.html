@@ -304,66 +304,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Password & Mode System ──
-const EDIT_PASSWORD = 'admin1234'; // এখানে পাসওয়ার্ড পরিবর্তন করুন
-let isEditMode = false;
-
-function tryLogin(){
-  const pw = document.getElementById('pwInput').value;
-  if(pw === EDIT_PASSWORD){
-    isEditMode = true;
-    localStorage.setItem('att_edit_mode','1');
-    hideLoginOverlay();
-    applyMode();
-    showToast('✅ সম্পাদনা মোড চালু');
-  } else {
-    document.getElementById('pwErr').textContent = '❌ পাসওয়ার্ড ভুল';
-    document.getElementById('pwInput').value='';
-  }
-}
-
-function viewMode(){
-  isEditMode = false;
-  localStorage.removeItem('att_edit_mode');
-  hideLoginOverlay();
-  applyMode();
-}
-
-function lockApp(){
-  isEditMode = false;
-  localStorage.removeItem('att_edit_mode');
-  applyMode();
-  showLoginOverlay();
-}
-
-function showLoginOverlay(){
-  document.getElementById('loginOverlay').style.display='flex';
-  document.getElementById('pwInput').value='';
-  document.getElementById('pwErr').textContent='';
-  setTimeout(()=>document.getElementById('pwInput').focus(),100);
-}
-
-function hideLoginOverlay(){
-  document.getElementById('loginOverlay').style.display='none';
-}
-
-function applyMode(){
-  const editBadge=document.getElementById('editBadge');
-  const viewBadge=document.getElementById('viewBadge');
-  if(isEditMode){
-    editBadge.style.display='block';
-    viewBadge.style.display='none';
-    // সব বাটন ও ইনপুট সক্রিয়
-    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='');
-    document.body.classList.remove('view-only-mode');
-  } else {
-    editBadge.style.display='none';
-    viewBadge.style.display='block';
-    // সব বাটন ও ইনপুট নিষ্ক্রিয়
-    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='none');
-    document.body.classList.add('view-only-mode');
-  }
-}
+// ── Auth system below ──
 
 // ── Firebase Config ──
 const firebaseConfig = {
