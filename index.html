@@ -1592,17 +1592,26 @@ function checkAuth(){
 
 window.onload=function(){
   document.getElementById('loginOverlay').style.display='none';
-  
-  // আগেই session check করে body class লাগাও (toolbar render হওয়ার আগেই)
+
+  // সবার আগে isAdmin সেট করো — যাতে fbLoad callback এ সঠিক মান থাকে
   const sess=sessionStorage.getItem('att_session');
-  if(sess==='viewer') document.body.classList.add('viewer-mode');
-  
-  // Firebase থেকে লোড + UI init
+  if(sess==='admin'){
+    isAdmin=true;
+    document.body.classList.remove('viewer-mode');
+  } else if(sess==='viewer'){
+    isAdmin=false;
+    document.body.classList.add('viewer-mode');
+  } else {
+    // session নেই — login overlay দেখাও
+    document.getElementById('loginOverlay').style.display='flex';
+    return; // init এর দরকার নেই এখনই
+  }
+
+  // Firebase লোড + UI init
   fbLoad(()=>{
     initUI();
     setTimeout(fbListen, 2000);
-    // init শেষে auth UI apply করো (toolbar এখন আছে)
-    checkAuth();
+    applyAuthUI(); // badge ও logout button যোগ
   });
 };
 </script>
