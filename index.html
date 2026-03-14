@@ -245,7 +245,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
     <!-- Row 2: date range + action buttons -->
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <label style="color:var(--text2);font-size:.85rem">থেকে:</label>
-      <select id="rFromD" style="width:58px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 4px;font-family:'Hind Siliguri',sans-serif;font-size:.82rem"></select>
+      <select id="rFromD" style="width:62px"></select>
       <select id="rFromM">
         <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
         <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
@@ -257,7 +257,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
       <select id="rFromY"></select>
       <span style="color:var(--text2)">→</span>
       <label style="color:var(--text2);font-size:.85rem">পর্যন্ত:</label>
-      <select id="rToD" style="width:58px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 4px;font-family:'Hind Siliguri',sans-serif;font-size:.82rem"></select>
+      <select id="rToD" style="width:62px"></select>
       <select id="rToM">
         <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
         <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
@@ -1234,41 +1234,41 @@ function setQuickRange(type){
   genReport();
 }
 
-function getEmpDateRangeStats(emp, dates, fy, fm, fd, ty, tm, td){
-  // getEmpMonthStats এর মতো একই লজিক — মাসিক টেবিলের সাথে মিলবে
-  const fromStr=dateKey(fy,fm,fd);
-  const toStr=dateKey(ty,tm,td);
+function getEmpDateRangeStats(emp, fy, fm, fd, ty, tm, td){
   let p=0,a=0,l=0,wd=0,otD=0,otH=0;
-  // মাস ধরে ধরে loop করো — getEmpMonthStats এর মতো
-  let cy=fy,cm=fm;
+  let cy=fy, cm=fm;
   while(true){
-    const mStr=`${cy}-${String(cm).padStart(2,'0')}`;
-    const fromMStr=`${fy}-${String(fm).padStart(2,'0')}`;
-    const toMStr=`${ty}-${String(tm).padStart(2,'0')}`;
-    if(mStr>toMStr) break;
+    if(cy>ty || (cy===ty && cm>tm)) break;
     const inactive=empInactiveThisMonth(emp,cy,cm);
     if(!inactive){
-      const dStart=(mStr===fromMStr)?fd:1;
-      const dEnd=(mStr===toMStr)?td:daysInMonth(cy,cm);
-      for(let d=dStart;d<=dEnd;d++){
-        const key=dateKey(cy,cm,d);
-        if(!isOffDay(cy,cm,d)&&empActiveOnDate(emp,key)){
-          wd++;
-          const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
-          if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
-        }
-        const ohKey='oth_'+key;
-        if(allData[ohKey]&&allData[ohKey][emp]>0){
-          otH+=allData[ohKey][emp]; otD++;
+      const totalDays=daysInMonth(cy,cm);
+      const dStart=(cy===fy&&cm===fm)?fd:1;
+      const dEnd=(cy===ty&&cm===tm)?td:totalDays;
+      const isFullMonth=(dStart===1 && dEnd===totalDays);
+      if(isFullMonth){
+        // পুরো মাস — হুবহু getEmpMonthStats
+        const st=getEmpMonthStats(emp,cy,cm);
+        if(!st.inactive){ p+=st.p;a+=st.a;l+=st.l;wd+=st.wd;otD+=st.otD;otH+=st.otH; }
+      } else {
+        // আংশিক মাস — দিন-ভিত্তিক, getEmpMonthStats এর মতো লজিক
+        for(let d=dStart;d<=dEnd;d++){
+          const key=dateKey(cy,cm,d);
+          if(!isOffDay(cy,cm,d)&&empActiveOnDate(emp,key)){
+            wd++;
+            const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
+            if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+          }
+          if(isWE(cy,cm,d)&&allData[key]&&allData[key][emp]==='অ') a++;
+          const ohKey='oth_'+key;
+          if(allData[ohKey]&&allData[ohKey][emp]>0){ otH+=allData[ohKey][emp]; otD++; }
         }
       }
     }
-    // পরের মাস
     cm++; if(cm>12){cm=1;cy++;}
-    if(cy>ty||(cy===ty&&cm>tm+1)) break;
   }
   return {p,a,l,wd,otD,otH};
 }
+
 
 function genReport(){
   try{
@@ -1281,9 +1281,9 @@ function genReport(){
   const filteredEmps = empSelVal==='__all__' ? employees : [employees[+empSelVal]];
   const isSingle = filteredEmps.length===1;
 
-  // প্রতিটি কর্মচারীর stats — সঠিক date range দিয়ে
+  // প্রতিটি কর্মচারীর stats — getEmpMonthStats দিয়ে, date range এর মাসগুলো
   const empStats = filteredEmps.map(emp=>{
-    const st=getEmpDateRangeStats(emp,dates,fy,fm,fd,ty,tm,td);
+    const st=getEmpDateRangeStats(emp,fy,fm,fd,ty,tm,td);
     const pct=st.wd>0?Math.round(st.p/st.wd*100):0;
     return {emp,...st,total:st.wd,pct};
   });
@@ -1353,13 +1353,12 @@ function genReport(){
         mRows+=`<tr style="opacity:.3"><td>${BN_MONTHS_FULL[mm-1]} ${my}</td><td colspan="7" style="text-align:center;font-style:italic;color:var(--text2)">নিষ্ক্রিয়</td></tr>`;
         return;
       }
-      // এই মাসের date range — শুরু ও শেষ দিন বের করো
-      const mStartD=(my===fy&&mm===fm)?fd:1;
-      const mEndD=(my===ty&&mm===tm)?td:daysInMonth(my,mm);
-      const ms=getEmpDateRangeStats(emp,dates,my,mm,mStartD,my,mm,mEndD);
-      // ডেটা আছে কিনা চেক (শুধু range এর মধ্যে)
+      const msd=(my===fy&&mm===fm)?fd:1;
+      const med=(my===ty&&mm===tm)?td:daysInMonth(my,mm);
+      const ms=getEmpDateRangeStats(emp,my,mm,msd,my,mm,med);
+      // ডেটা আছে কিনা চেক
       let hasData=false;
-      for(let d=mStartD;d<=mEndD;d++){
+      for(let d=msd;d<=med;d++){
         const k=dateKey(my,mm,d);
         if(allData[k]&&allData[k][emp]!=null){hasData=true;break;}
       }
