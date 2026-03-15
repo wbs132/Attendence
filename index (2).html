@@ -136,6 +136,19 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
 .mbt th{background:var(--surface2);color:var(--text2);padding:7px 10px;text-align:center;font-weight:600;border:1px solid var(--border);}
 .mbt td{padding:6px 10px;border:1px solid var(--border);text-align:center;background:var(--surface);}
 .mbt td:first-child{text-align:left;font-weight:500;}
+/* Login overlay */
+#loginOverlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(10,16,25,.97);
+  z-index:99999;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:16px;
+}
+#loginOverlay.show{ display:flex; }
+/* Viewer mode — isAdmin চেক JS এ হয়, CSS block নেই */
 </style>
 </head>
 <body>
@@ -158,6 +171,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
   <div class="tab active" onclick="switchTab('daily')">📅 দৈনিক ইনপুট</div>
   <div class="tab" onclick="switchTab('monthly')">📊 মাসিক টেবিল</div>
   <div class="tab" onclick="switchTab('report')">📈 রিপোর্ট</div>
+  <div class="tab" onclick="switchTab('bonus')">🎁 বোনাস</div>
 </div>
 
 <!-- DAILY -->
@@ -232,7 +246,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
     <!-- Row 2: date range + action buttons -->
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <label style="color:var(--text2);font-size:.85rem">থেকে:</label>
-      <select id="rFromD" style="width:58px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 4px;font-family:'Hind Siliguri',sans-serif;font-size:.82rem"></select>
+      <select id="rFromD" style="width:62px"></select>
       <select id="rFromM">
         <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
         <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
@@ -244,7 +258,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
       <select id="rFromY"></select>
       <span style="color:var(--text2)">→</span>
       <label style="color:var(--text2);font-size:.85rem">পর্যন্ত:</label>
-      <select id="rToD" style="width:58px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 4px;font-family:'Hind Siliguri',sans-serif;font-size:.82rem"></select>
+      <select id="rToD" style="width:62px"></select>
       <select id="rToM">
         <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
         <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
@@ -257,8 +271,73 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
       <button class="btn btn-primary btn-sm" onclick="genReport()">🔍 রিপোর্ট দেখুন</button>
       <button class="btn btn-blue btn-sm" onclick="exportReportCSV()">📥 CSV ডাউনলোড</button>
     </div>
+    <!-- Row 3: দিনওয়ারি মাস view -->
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+      <span style="color:var(--text2);font-size:.82rem;font-weight:600">📅 দিনওয়ারি:</span>
+      <select id="rDayM">
+        <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+        <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+        <option value="5">মে</option><option value="6">জুন</option>
+        <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+        <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+        <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+      </select>
+      <select id="rDayY"></select>
+      <button class="btn btn-secondary btn-sm" onclick="genDayReport()">📊 দিনওয়ারি দেখুন</button>
+    </div>
   </div>
+  <div id="dayReportOut"></div>
   <div id="reportOut"></div>
+</div>
+
+
+<!-- Bonus Panel -->
+<div class="panel" id="panel-bonus">
+  <div class="section-header" style="flex-wrap:wrap;gap:8px">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <label style="color:var(--text2);font-size:.85rem">মাস:</label>
+      <select id="bMonthSel">
+        <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+        <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+        <option value="5">মে</option><option value="6">জুন</option>
+        <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+        <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+        <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+      </select>
+      <select id="bYearSel" onchange="renderBonusMonthly()"></select>
+      <button class="btn btn-primary btn-sm" onclick="renderBonusMonthly()">📊 মাসিক দেখুন</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <span style="color:var(--text2);font-size:.85rem;font-weight:600">📋 বোনাস রিপোর্ট:</span>
+      <label style="color:var(--text2);font-size:.85rem">থেকে:</label>
+      <select id="bFromD" style="width:62px"></select>
+      <select id="bFromM">
+        <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+        <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+        <option value="5">মে</option><option value="6">জুন</option>
+        <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+        <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+        <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+      </select>
+      <select id="bFromY"></select>
+      <span style="color:var(--text2)">→</span>
+      <label style="color:var(--text2);font-size:.85rem">পর্যন্ত:</label>
+      <select id="bToD" style="width:62px"></select>
+      <select id="bToM">
+        <option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option>
+        <option value="3">মার্চ</option><option value="4">এপ্রিল</option>
+        <option value="5">মে</option><option value="6">জুন</option>
+        <option value="7">জুলাই</option><option value="8">আগস্ট</option>
+        <option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option>
+        <option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option>
+      </select>
+      <select id="bToY"></select>
+      <select id="bEmpSel" style="min-width:140px"><option value="__all__">— সবাই —</option></select>
+      <button class="btn btn-primary btn-sm" onclick="genBonusReport()">🔍 রিপোর্ট দেখুন</button>
+    </div>
+  </div>
+  <div id="bonusMonthlyOut"></div>
+  <div id="bonusReportOut"></div>
 </div>
 
 <!-- Announce holiday modal -->
@@ -304,66 +383,7 @@ body{font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--tex
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Password & Mode System ──
-const EDIT_PASSWORD = 'admin1234'; // এখানে পাসওয়ার্ড পরিবর্তন করুন
-let isEditMode = false;
-
-function tryLogin(){
-  const pw = document.getElementById('pwInput').value;
-  if(pw === EDIT_PASSWORD){
-    isEditMode = true;
-    localStorage.setItem('att_edit_mode','1');
-    hideLoginOverlay();
-    applyMode();
-    showToast('✅ সম্পাদনা মোড চালু');
-  } else {
-    document.getElementById('pwErr').textContent = '❌ পাসওয়ার্ড ভুল';
-    document.getElementById('pwInput').value='';
-  }
-}
-
-function viewMode(){
-  isEditMode = false;
-  localStorage.removeItem('att_edit_mode');
-  hideLoginOverlay();
-  applyMode();
-}
-
-function lockApp(){
-  isEditMode = false;
-  localStorage.removeItem('att_edit_mode');
-  applyMode();
-  showLoginOverlay();
-}
-
-function showLoginOverlay(){
-  document.getElementById('loginOverlay').style.display='flex';
-  document.getElementById('pwInput').value='';
-  document.getElementById('pwErr').textContent='';
-  setTimeout(()=>document.getElementById('pwInput').focus(),100);
-}
-
-function hideLoginOverlay(){
-  document.getElementById('loginOverlay').style.display='none';
-}
-
-function applyMode(){
-  const editBadge=document.getElementById('editBadge');
-  const viewBadge=document.getElementById('viewBadge');
-  if(isEditMode){
-    editBadge.style.display='block';
-    viewBadge.style.display='none';
-    // সব বাটন ও ইনপুট সক্রিয়
-    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='');
-    document.body.classList.remove('view-only-mode');
-  } else {
-    editBadge.style.display='none';
-    viewBadge.style.display='block';
-    // সব বাটন ও ইনপুট নিষ্ক্রিয়
-    document.querySelectorAll('.edit-only').forEach(el=>el.style.display='none');
-    document.body.classList.add('view-only-mode');
-  }
-}
+// ── Auth system below ──
 
 // ── Firebase Config ──
 const firebaseConfig = {
@@ -452,10 +472,12 @@ function fbListen(){
       localStorage.setItem('att_holidays',JSON.stringify(d.holidays)); 
     }
     // refresh current view silently
+    // active panel রিফ্রেশ
     const activePanel=document.querySelector('.panel.active');
     if(activePanel){
       if(activePanel.id==='panel-monthly') renderMonthly();
       else if(activePanel.id==='panel-daily') loadDailyDate();
+      else if(activePanel.id==='panel-report') genReport();
     }
     showToast('🔄 ডেটা আপডেট হয়েছে');
   });
@@ -544,30 +566,28 @@ function init(){
 }
 function initUI(){
   const ySel=document.getElementById('yearSel');
+  if(ySel) ySel.innerHTML='';
   const y=new Date().getFullYear();
-  for(let i=2024;i<=2030;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===y)o.selected=true;ySel.appendChild(o);}
+  for(let i=2024;i<=2030;i++){
+    const o=document.createElement('option');
+    o.value=i; o.textContent=i;
+    if(i===y) o.selected=true;
+    ySel.appendChild(o);
+  }
   document.getElementById('monthSel').value=new Date().getMonth()+1;
   document.getElementById('datePicker').value=getToday();
   currentDate=getToday();
   loadDailyDate();
   setInterval(saveAll, 30000);
-  // পাসওয়ার্ড মোড চেক
-  if(localStorage.getItem('att_edit_mode')==='1'){
-    isEditMode=true;
-    hideLoginOverlay();
-    applyMode();
-  } else {
-    showLoginOverlay();
-    applyMode();
-  }
 }
 
 function switchTab(t){
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['daily','monthly','report'][i]===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['daily','monthly','report','bonus'][i]===t));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
   if(t==='monthly') renderMonthly();
   if(t==='report') initReportSelects();
+  if(t==='bonus'){ initBonusSelects(); renderBonusMonthly(); }
 }
 
 // ── DAILY ──
@@ -606,7 +626,6 @@ function renderGrid(){
 
 function setDaily(idx,s){
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx]; todayStatus[emp]=s;
   if(!allData[currentDate]) allData[currentDate]={};
   allData[currentDate][emp]=s;
@@ -621,7 +640,6 @@ function setDaily(idx,s){
 
 function setDailyOT(idx, val){
   if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
   const emp=employees[idx];
   const h=parseFloat(val)||0;
   if(h>0){ todayOT[emp]=h; } else { delete todayOT[emp]; }
@@ -763,6 +781,9 @@ function setMonthlyOT(emp,y,m,d,val,inp){
   localStorage.setItem('att_data',JSON.stringify(allData));
   fbSave();
   recalcRow(emp,y,m);
+  // বোনাস tab active থাকলে refresh করো
+  const bp=document.getElementById('panel-bonus');
+  if(bp&&bp.classList.contains('active')) renderBonusMonthly();
 }
 
 function setFriAbs(emp,y,m,d,btn){
@@ -780,8 +801,7 @@ function setFriAbs(emp,y,m,d,btn){
 // toggleOT removed — oth_ keys now used for all days
 
 function setCellM(emp,y,m,d,s,btn){
-  if(!isAdmin){showToast('🔒 শুধু Admin পরিবর্তন করতে পারবেন');return;}
-  if(!isEditMode){showToast('🔒 সম্পাদনা করতে লগইন করুন');return;}
+  if(!isAdmin){showToast('🔒 Admin লগইন করুন (isAdmin=false)');return;}
   const key=dateKey(y,m,d);
   if(!allData[key]) allData[key]={};
   allData[key][emp]=s;
@@ -801,14 +821,15 @@ function getEmpMonthStats(emp,y,m){
   if(inactive) return {p:0,a:0,l:0,wd:0,otD:0,otH:0,inactive:true};
   for(let d=1;d<=days;d++){
     const key=dateKey(y,m,d);
-    if(!isOffDay(y,m,d)&&empActiveOnDate(emp,key)){
+    if(!empActiveOnDate(emp,key)) continue;
+    if(!isOffDay(y,m,d)){
       wd++;
       const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
       if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
     }
-    // Friday absence
+    // শুক্রবারে অ সিলেক্ট থাকলে count হবে
     if(isWE(y,m,d)&&allData[key]&&allData[key][emp]==='অ') a++;
-    // OT ঘণ্টা — oth_ key থেকে (সব দিন)
+    // OT ঘণ্টা
     const ohKey='oth_'+key;
     if(allData[ohKey]&&allData[ohKey][emp]>0){
       otH+=allData[ohKey][emp];
@@ -1182,7 +1203,83 @@ function populateDays(selId, monthSelId, yearSelId, defaultDay){
     sel.appendChild(o);
   }
 }
+function genDayReport(){
+  const m=+document.getElementById('rDayM').value;
+  const y=+document.getElementById('rDayY').value;
+  if(!m||!y) return;
+  const days=daysInMonth(y,m);
+  const empSelVal=document.getElementById('rEmpSel').value;
+  const filteredEmps=empSelVal==='__all__'?employees:[employees[+empSelVal]].filter(Boolean);
+
+  // header
+  let dayHdr=`<th style="position:sticky;left:0;background:var(--surface2);z-index:2;white-space:nowrap">কর্মচারী</th>`;
+  for(let d=1;d<=days;d++){
+    const we=isWE(y,m,d),hol=isHoliday(y,m,d);
+    const lbl=we?'শু':hol?'🎌':String(d);
+    const col=we?'#64748b':hol?'#f59e0b':'var(--text2)';
+    dayHdr+=`<th style="min-width:28px;font-size:.65rem;color:${col};padding:4px 2px">${lbl}<br><span style="font-size:.55rem;color:var(--text2)">${d}</span></th>`;
+  }
+  dayHdr+=`<th style="color:#00c9a7;min-width:32px">উ</th><th style="color:#f43f5e;min-width:32px">অ</th><th style="color:#f59e0b;min-width:32px">ছ</th><th style="color:#a78bfa;min-width:36px">OT</th><th style="min-width:42px">%</th>`;
+
+  let rows='';
+  filteredEmps.forEach((emp,ei)=>{
+    const inactive=empInactiveThisMonth(emp,y,m);
+    if(inactive){
+      rows+=`<tr><td style="position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;font-size:.75rem">${ei+1}. ${emp}</td><td colspan="${days+5}" style="text-align:center;opacity:.35;font-style:italic;font-size:.72rem">নিষ্ক্রিয়</td></tr>`;
+      return;
+    }
+    let cells='';
+    for(let d=1;d<=days;d++){
+      const key=dateKey(y,m,d);
+      const we=isWE(y,m,d),hol=isHoliday(y,m,d);
+      const raw=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:null;
+      let txt,col;
+      if(we){ txt='শু'; col='#475569'; }
+      else if(hol){ txt='🎌'; col='#f59e0b'; }
+      else if(raw==='অ'){ txt='অ'; col='#f43f5e'; }
+      else if(raw==='ছ'){ txt='ছ'; col='#f59e0b'; }
+      else if(!empActiveOnDate(emp,key)){ txt='—'; col='#334155'; }
+      else { txt='উ'; col='#00c9a7'; }
+      cells+=`<td style="text-align:center;font-size:.7rem;color:${col};padding:3px 1px">${txt}</td>`;
+    }
+    const ms=getEmpMonthStats(emp,y,m);
+    const pct=ms.wd>0?Math.round(ms.p/ms.wd*100):0;
+    const pc=pct>=80?'#00c9a7':pct>=60?'#f59e0b':'#f43f5e';
+    const otH=ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-';
+    rows+=`<tr>
+      <td style="position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;font-size:.75rem;padding:4px 8px">${ei+1}. ${emp}</td>
+      ${cells}
+      <td style="color:#00c9a7;font-weight:700;text-align:center;font-size:.75rem">${ms.p}</td>
+      <td style="color:#f43f5e;font-weight:700;text-align:center;font-size:.75rem">${ms.a}</td>
+      <td style="color:#f59e0b;font-weight:700;text-align:center;font-size:.75rem">${ms.l}</td>
+      <td style="color:#a78bfa;font-weight:700;text-align:center;font-size:.75rem">${ms.otD||'-'}</td>
+      <td style="color:${pc};font-weight:700;text-align:center;font-size:.75rem">${pct}%</td>
+    </tr>`;
+  });
+
+  document.getElementById('dayReportOut').innerHTML=`
+    <h3 style="font-size:.85rem;color:var(--text2);margin:16px 0 8px;">📅 ${BN_MONTHS_FULL[m-1]} ${y} — দিনওয়ারি</h3>
+    <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:16px">
+    <table style="border-collapse:collapse;width:100%;background:var(--surface)">
+      <thead><tr>${dayHdr}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+
 function initReportSelects(){
+  // দিনওয়ারি বছর dropdown
+  const rdY=document.getElementById('rDayY');
+  if(rdY&&rdY.options.length===0){
+    const y=new Date().getFullYear();
+    for(let i=2024;i<=2030;i++){
+      const o=document.createElement('option');
+      o.value=i; o.textContent=i;
+      if(i===y) o.selected=true;
+      rdY.appendChild(o);
+    }
+    document.getElementById('rDayM').value=new Date().getMonth()+1;
+  }
   const now=new Date();
   const y=now.getFullYear(), m=now.getMonth()+1;
   // বছর dropdown
@@ -1284,6 +1381,245 @@ function setQuickRange(type){
   genReport();
 }
 
+function getEmpDateRangeStats(emp, fy, fm, fd, ty, tm, td){
+  let p=0,a=0,l=0,wd=0,otD=0,otH=0;
+  let cy=fy, cm=fm;
+  while(true){
+    if(cy>ty || (cy===ty && cm>tm)) break;
+    const inactive=empInactiveThisMonth(emp,cy,cm);
+    if(!inactive){
+      const totalDays=daysInMonth(cy,cm);
+      const dStart=(cy===fy&&cm===fm)?fd:1;
+      const dEnd=(cy===ty&&cm===tm)?td:totalDays;
+      const isFullMonth=(dStart===1 && dEnd===totalDays);
+      if(isFullMonth){
+        // পুরো মাস — হুবহু getEmpMonthStats
+        const st=getEmpMonthStats(emp,cy,cm);
+        if(!st.inactive){ p+=st.p;a+=st.a;l+=st.l;wd+=st.wd;otD+=st.otD;otH+=st.otH; }
+      } else {
+        // আংশিক মাস — দিন-ভিত্তিক, getEmpMonthStats এর মতো লজিক
+        for(let d=dStart;d<=dEnd;d++){
+          const key=dateKey(cy,cm,d);
+          if(!isOffDay(cy,cm,d)&&empActiveOnDate(emp,key)){
+            wd++;
+            const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
+            if(s==='উ')p++;else if(s==='অ')a++;else if(s==='ছ')l++;
+          }
+          if(isWE(cy,cm,d)&&allData[key]&&allData[key][emp]==='অ') a++;
+          const ohKey='oth_'+key;
+          if(allData[ohKey]&&allData[ohKey][emp]>0){ otH+=allData[ohKey][emp]; otD++; }
+        }
+      }
+    }
+    cm++; if(cm>12){cm=1;cy++;}
+  }
+  return {p,a,l,wd,otD,otH};
+}
+
+
+// ══════════════════════════════════════════════
+// BONUS SECTION
+// উ = মোট দিন − অ (শুক্রবার/ছুটি/হলিডে সব গণনায়)
+// ══════════════════════════════════════════════
+
+function getBonusStats(emp, y, m, dStart, dEnd){
+  // মাসিকে যতগুলো অ সিলেক্ট — সবই count
+  const inactive=empInactiveThisMonth(emp,y,m);
+  if(inactive) return {total:0,p:0,a:0,l:0,inactive:true};
+  let total=0, a=0, l=0;
+  for(let d=dStart;d<=dEnd;d++){
+    const key=dateKey(y,m,d);
+    if(!empActiveOnDate(emp,key)) continue;
+    total++;
+    const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:null;
+    if(s==='অ') a++;
+    else if(s==='ছ') l++;
+  }
+  const p = total - a;
+  return {total,p,a,l,inactive:false};
+}
+
+function getBonusRangeStats(emp, fy, fm, fd, ty, tm, td){
+  let total=0,p=0,a=0,l=0;
+  let cy=fy,cm=fm;
+  while(true){
+    if(cy>ty||(cy===ty&&cm>tm)) break;
+    const dStart=(cy===fy&&cm===fm)?fd:1;
+    const dEnd=(cy===ty&&cm===tm)?td:daysInMonth(cy,cm);
+    const st=getBonusStats(emp,cy,cm,dStart,dEnd);
+    if(!st.inactive){ total+=st.total;p+=st.p;a+=st.a;l+=st.l; }
+    cm++; if(cm>12){cm=1;cy++;}
+  }
+  return {total,p,a,l};
+}
+
+function initBonusSelects(){
+  // বছর dropdown
+  ['bFromY','bToY','bYearSel'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel||sel.options.length>0) return;
+    const y=new Date().getFullYear();
+    for(let i=2024;i<=2030;i++){
+      const o=document.createElement('option');
+      o.value=i; o.textContent=i;
+      if(i===y) o.selected=true;
+      sel.appendChild(o);
+    }
+  });
+  const now=new Date();
+  const y=now.getFullYear(), m=now.getMonth()+1;
+  const el=document.getElementById('bMonthSel');
+  if(el) el.value=m;
+  // দিন dropdown
+  populateDays('bFromD','bFromM','bFromY',1);
+  populateDays('bToD','bToM','bToY',daysInMonth(y,m));
+  document.getElementById('bFromM').value=m;
+  document.getElementById('bToM').value=m;
+  document.getElementById('bFromY').value=y;
+  document.getElementById('bToY').value=y;
+  // onchange listeners
+  ['bFromM','bFromY'].forEach(id=>{
+    document.getElementById(id).onchange=()=>populateDays('bFromD','bFromM','bFromY',1);
+  });
+  ['bToM','bToY'].forEach(id=>{
+    document.getElementById(id).onchange=()=>{
+      const tm2=+document.getElementById('bToM').value;
+      const ty2=+document.getElementById('bToY').value;
+      populateDays('bToD','bToM','bToY',daysInMonth(ty2,tm2));
+    };
+  });
+  document.getElementById('bMonthSel').onchange=renderBonusMonthly;
+  // emp dropdowns populate
+  ['bEmpSel'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML='<option value="__all__">— সবাই —</option>';
+    employees.forEach((e,i)=>{
+      const o=document.createElement('option');
+      o.value=i; o.textContent=e; sel.appendChild(o);
+    });
+  });
+}
+
+function renderBonusMonthly(){
+  const m=parseInt(document.getElementById('bMonthSel').value);
+  const y=parseInt(document.getElementById('bYearSel').value);
+  if(!m||!y) return;
+  const days=daysInMonth(y,m);
+  const activeEmps=employees.filter(emp=>empActiveInMonth(emp,y,m));
+  if(!activeEmps.length){
+    document.getElementById('bonusMonthlyOut').innerHTML='<p style="color:var(--text2);padding:20px">কোনো সক্রিয় কর্মচারী নেই।</p>';
+    return;
+  }
+  // Header — দিনগুলো
+  let dayHeaders='';
+  for(let d=1;d<=days;d++){
+    const we=isWE(y,m,d), hol=isHoliday(y,m,d);
+    const label=we?'শুক্র':hol?'🎌':String(d);
+    const col=we?'#475569':hol?'#f59e0b':'var(--text2)';
+    dayHeaders+=`<th style="min-width:32px;color:${col};font-size:.7rem">${label}<br><span style="font-size:.6rem">${d}</span></th>`;
+  }
+  let rows='';
+  activeEmps.forEach((emp,ei)=>{
+    const st=getBonusStats(emp,y,m,1,days);
+    if(st.inactive){
+      rows+=`<tr><td style="position:sticky;left:0;background:var(--surface);z-index:1">${ei+1}. ${emp}</td><td colspan="${days+3}" style="text-align:center;opacity:.4;font-style:italic">নিষ্ক্রিয়</td></tr>`;
+      return;
+    }
+    let cells='';
+    for(let d=1;d<=days;d++){
+      const key=dateKey(y,m,d);
+      const s=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:'উ';
+      const we=isWE(y,m,d), hol=isHoliday(y,m,d);
+      // অ সবার আগে চেক — শুক্রবার/হলিডেতেও অ দেখাবে
+      let cellText=s, cellColor='#00c9a7';
+      if(s==='অ'){ cellText='অ'; cellColor='#f43f5e'; }   // অনুপস্থিত = লাল (সর্বোচ্চ priority)
+      else if(s==='ছ'){ cellText='ছ'; cellColor='#f59e0b'; } // ছুটি = হলুদ
+      else if(we){ cellText='শু'; cellColor='#00c9a7'; }   // শুক্রবার = উ
+      else if(hol){ cellText='🎌'; cellColor='#00c9a7'; } // হলিডে = উ
+      else { cellText='উ'; cellColor='#00c9a7'; }          // বাকি সব = উ
+      cells+=`<td style="text-align:center;font-size:.72rem;color:${cellColor}">${cellText}</td>`;
+    }
+    const pct=st.total>0?Math.round(st.p/st.total*100):0;
+    const pc=pct>=80?'#00c9a7':pct>=60?'#f59e0b':'#f43f5e';
+    rows+=`<tr>
+      <td style="position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;padding-right:8px">${ei+1}. ${emp}</td>
+      ${cells}
+      <td style="color:#00c9a7;font-weight:700;text-align:center">${st.p}</td>
+      <td style="color:#f43f5e;font-weight:700;text-align:center">${st.a}</td>
+      <td style="color:#f59e0b;font-weight:700;text-align:center">${st.l}</td>
+      <td style="color:${pc};font-weight:700;text-align:center">${pct}%</td>
+    </tr>`;
+  });
+  document.getElementById('bonusMonthlyOut').innerHTML=`
+    <div style="overflow-x:auto;margin-top:12px">
+    <table class="monthly-table" style="font-size:.75rem">
+      <thead><tr>
+        <th style="position:sticky;left:0;background:var(--surface2);z-index:2">কর্মচারী</th>
+        ${dayHeaders}
+        <th style="color:#00c9a7;min-width:36px">উ</th>
+        <th style="color:#f43f5e;min-width:36px">অ</th>
+        <th style="color:#f59e0b;min-width:36px">ছ</th>
+        <th style="min-width:42px">%</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function genBonusReport(){
+  const fy=+document.getElementById('bFromY').value;
+  const fm=+document.getElementById('bFromM').value;
+  const fd=+document.getElementById('bFromD').value;
+  const ty=+document.getElementById('bToY').value;
+  const tm=+document.getElementById('bToM').value;
+  const td=+document.getElementById('bToD').value;
+  const fromStr=dateKey(fy,fm,fd), toStr=dateKey(ty,tm,td);
+  if(fromStr>toStr){showToast('⚠️ শুরু তারিখ শেষ তারিখের আগে হতে হবে');return;}
+  const fromLabel=`${fd} ${BN_MONTHS_FULL[fm-1]} ${fy}`;
+  const toLabel=`${td} ${BN_MONTHS_FULL[tm-1]} ${ty}`;
+
+  const bEmpVal=document.getElementById('bEmpSel')?document.getElementById('bEmpSel').value:'__all__';
+  const filteredBEmps=bEmpVal==='__all__'?employees:[employees[+bEmpVal]].filter(Boolean);
+  const empStats=filteredBEmps.map(emp=>{
+    const st=getBonusRangeStats(emp,fy,fm,fd,ty,tm,td);
+    const pct=st.total>0?Math.round(st.p/st.total*100):0;
+    return {emp,...st,pct};
+  }).filter(s=>s.total>0);
+
+  if(!empStats.length){
+    document.getElementById('bonusReportOut').innerHTML='<p style="color:var(--text2);padding:20px">কোনো ডেটা নেই।</p>';
+    return;
+  }
+
+  let html=`<div style="margin-top:16px">
+    <h3 style="font-size:.9rem;color:var(--text2);margin-bottom:12px">🎁 বোনাস রিপোর্ট: ${fromLabel} → ${toLabel}</h3>
+    <div class="rpt-table-wrap"><table class="rpt-table">
+    <thead><tr>
+      <th>#</th><th>কর্মচারীর নাম</th>
+      <th style="color:#3b82f6">মোট দিন</th>
+      <th style="color:#00c9a7">উপস্থিত</th>
+      <th style="color:#f43f5e">অনুপস্থিত</th>
+      <th style="color:#f59e0b">ছুটি</th>
+      <th>উপস্থিতি %</th>
+    </tr></thead><tbody>`;
+  empStats.forEach((s,i)=>{
+    const bc=s.pct>=80?'#00c9a7':s.pct>=60?'#f59e0b':'#f43f5e';
+    html+=`<tr>
+      <td style="color:var(--text2)">${i+1}</td>
+      <td>${s.emp}</td>
+      <td style="color:#3b82f6;font-weight:700">${s.total}</td>
+      <td style="color:#00c9a7;font-weight:700">${s.p}</td>
+      <td style="color:#f43f5e;font-weight:700">${s.a}</td>
+      <td style="color:#f59e0b;font-weight:700">${s.l}</td>
+      <td><span style="font-weight:700;color:${bc}">${s.pct}%</span>
+        <span style="display:inline-block;width:${s.pct}px;max-width:80px;height:5px;border-radius:3px;background:${bc};vertical-align:middle;margin-left:6px"></span>
+      </td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('bonusReportOut').innerHTML=html;
+}
+
 function genReport(){
   try{
   const range=getDateRange();
@@ -1295,72 +1631,40 @@ function genReport(){
   const filteredEmps = empSelVal==='__all__' ? employees : [employees[+empSelVal]];
   const isSingle = filteredEmps.length===1;
 
-  // months — getDateRange() থেকে আসে
-
-  // Per-employee totals
+  // প্রতিটি কর্মচারীর stats — getEmpMonthStats দিয়ে, date range এর মাসগুলো
   const empStats = filteredEmps.map(emp=>{
-    let p=0,a=0,l=0,total=0,otD=0;
-    // getEmpMonthStats দিয়ে প্রতি মাস গণনা — মাসিক টেবিলের মতো
-    months.forEach(({y:my,m:mm})=>{
-      let hasD=false;
-      for(let d=1;d<=daysInMonth(my,mm);d++){
-        const k=dateKey(my,mm,d);
-        if(allData[k]&&allData[k][emp]!=null){hasD=true;break;}
-      }
-      if(!hasD) return; // ডেটা নেই মাস বাদ
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(ms.inactive) return;
-      p+=ms.p; a+=ms.a; l+=ms.l; total+=ms.wd; otD+=ms.otD;
-    });
-    // OT দিন+ঘণ্টা getEmpMonthStats থেকেই আসছে
-    const pct=total>0?Math.round(p/total*100):0;
-    let otH=0;
-    months.forEach(({y:my,m:mm})=>{
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(!ms.inactive) otH+=ms.otH;
-    });
-    return {emp,p,a,l,total,pct,otD,otH};
+    const st=getEmpDateRangeStats(emp,fy,fm,fd,ty,tm,td);
+    const pct=st.wd>0?Math.round(st.p/st.wd*100):0;
+    return {emp,...st,total:st.wd,pct};
   });
 
-  // For single employee, compute totals directly
-  let singleTotalP=0,singleTotalA=0,singleTotalL=0,singleTotalD=0;
-  if(isSingle){
-    const emp=filteredEmps[0];
-    months.forEach(({y:my,m:mm})=>{
-      let hasD=false;
-      for(let d=1;d<=daysInMonth(my,mm);d++){
-        const k=dateKey(my,mm,d);
-        if(allData[k]&&allData[k][emp]!=null){hasD=true;break;}
-      }
-      if(!hasD) return;
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(ms.inactive) return;
-      singleTotalP+=ms.p; singleTotalA+=ms.a; singleTotalL+=ms.l; singleTotalD+=ms.wd;
-    });
-  }
-  const singlePct=singleTotalD>0?Math.round(singleTotalP/singleTotalD*100):0;
+  const singleSt = isSingle?empStats[0]:{};
+  const singlePct = isSingle?singleSt.pct:0;
   const singleColor=singlePct>=80?'#00c9a7':singlePct>=60?'#f59e0b':'#f43f5e';
 
   let html=`<div class="rpt-summary">
     ${isSingle ? `
-    <div class="rpt-card"><div class="rn" style="color:#3b82f6">${singleTotalD}</div><div class="rl">মোট কর্মদিবস</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#00c9a7">${singleTotalP}</div><div class="rl">উপস্থিত</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#f43f5e">${singleTotalA}</div><div class="rl">অনুপস্থিত</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${singleTotalL}</div><div class="rl">ছুটি</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#3b82f6">${singleSt.total}</div><div class="rl">মোট কর্মদিবস</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#00c9a7">${singleSt.p}</div><div class="rl">উপস্থিত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f43f5e">${singleSt.a}</div><div class="rl">অনুপস্থিত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${singleSt.l}</div><div class="rl">ছুটি</div></div>
     <div class="rpt-card"><div class="rn" style="color:${singleColor}">${singlePct}%</div><div class="rl">উপস্থিতি হার</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#a78bfa">${singleSt.otD||0}</div><div class="rl">OT দিন</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#c4b5fd">${singleSt.otH>0?(singleSt.otH%1===0?singleSt.otH+'h':singleSt.otH.toFixed(1)+'h'):'-'}</div><div class="rl">OT ঘণ্টা</div></div>
     ` : `
     <div class="rpt-card"><div class="rn" style="color:#3b82f6">${dates.length}</div><div class="rl">মোট কর্মদিবস</div></div>
     <div class="rpt-card"><div class="rn" style="color:#00c9a7">${filteredEmps.length}</div><div class="rl">কর্মচারী</div></div>
     <div class="rpt-card"><div class="rn" style="color:#8ba3bf">${months.length}</div><div class="rl">মাস</div></div>
-    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${fromLabel}</div><div class="rl">থেকে ${toLabel} পর্যন্ত</div></div>
+    <div class="rpt-card"><div class="rn" style="color:#f59e0b">${fromLabel} → ${toLabel}</div><div class="rl">তারিখ পরিসর</div></div>
     `}
   </div>`;
 
-  // Summary table all employees
-  html+=`<div class="rpt-table-wrap"><table class="rpt-table">
+  // সবার সারসংক্ষেপ টেবিল
+  if(!isSingle){
+    html+=`<div class="rpt-table-wrap"><table class="rpt-table">
     <thead><tr>
       <th>#</th><th>কর্মচারীর নাম</th>
-      <th style="color:#3b82f6">মোট কর্মদিবস</th>
+      <th style="color:#3b82f6">কর্মদিবস</th>
       <th style="color:#00c9a7">উপস্থিত</th>
       <th style="color:#f43f5e">অনুপস্থিত</th>
       <th style="color:#f59e0b">ছুটি</th>
@@ -1368,108 +1672,150 @@ function genReport(){
       <th style="color:#a78bfa">OT দিন</th>
       <th style="color:#c4b5fd">OT ঘণ্টা</th>
     </tr></thead><tbody>`;
+    empStats.forEach((s,i)=>{
+      const barColor=s.pct>=80?'#00c9a7':s.pct>=60?'#f59e0b':'#f43f5e';
+      const otHDisp=s.otH>0?(s.otH%1===0?s.otH+'h':s.otH.toFixed(1)+'h'):'-';
+      html+=`<tr>
+        <td style="color:var(--text2)">${i+1}</td>
+        <td>${s.emp}</td>
+        <td style="color:#3b82f6;font-weight:700">${s.total}</td>
+        <td style="color:#00c9a7;font-weight:700">${s.p}</td>
+        <td style="color:#f43f5e;font-weight:700">${s.a}</td>
+        <td style="color:#f59e0b;font-weight:700">${s.l}</td>
+        <td><span style="font-weight:700;color:${barColor}">${s.pct}%</span>
+          <span style="display:inline-block;width:${s.pct}px;max-width:80px;height:5px;border-radius:3px;background:${barColor};vertical-align:middle;margin-left:6px"></span>
+        </td>
+        <td style="color:#a78bfa;font-weight:700">${s.otD||0}</td>
+        <td style="color:#c4b5fd;font-weight:700">${otHDisp}</td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
 
-  if(!isSingle){
-  empStats.forEach((s,i)=>{
-    const barW=s.pct;
-    const barColor=s.pct>=80?'#00c9a7':s.pct>=60?'#f59e0b':'#f43f5e';
-    html+=`<tr>
-      <td style="color:var(--text2)">${i+1}</td>
-      <td>${s.emp}</td>
-      <td style="color:#3b82f6;font-weight:700">${s.total}</td>
-      <td style="color:#00c9a7;font-weight:700">${s.p}</td>
-      <td style="color:#f43f5e;font-weight:700">${s.a}</td>
-      <td style="color:#f59e0b;font-weight:700">${s.l}</td>
-      <td><span style="font-weight:700;color:${barColor}">${s.pct}%</span>
-        <span style="display:inline-block;width:${barW}px;max-width:80px;height:5px;border-radius:3px;background:${barColor};vertical-align:middle;margin-left:6px"></span>
-      </td>
-      <td style="color:#a78bfa;font-weight:700">${s.otD||0}</td>
-    </tr>`;
-  });
-  html+=`</tbody></table></div>`;
-  } // end if(!isSingle)
-
-  // Per-employee monthly detail
-  html+=`<h3 style="font-size:.9rem;color:var(--text2);margin-bottom:12px;">📋 ${isSingle?filteredEmps[0]+' — ':''} মাসওয়ারি বিবরণ</h3>`;
+  // মাসওয়ারি বিবরণ — প্রতি মাসের ভেতরে date range মেনে
+  html+=`<h3 style="font-size:.9rem;color:var(--text2);margin:16px 0 12px;">📋 ${isSingle?filteredEmps[0]+' — ':''} মাসওয়ারি বিবরণ</h3>`;
   filteredEmps.forEach((emp,ei)=>{
     let totalP=0,totalA=0,totalL=0,totalD=0;
     let mRows='';
     months.forEach(({y:my,m:mm})=>{
-      const ms=getEmpMonthStats(emp,my,mm);
-      if(ms.inactive){
-        mRows+=`<tr style="opacity:.3">
-          <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
-          <td colspan="6" style="color:var(--text2);font-style:italic;text-align:center">নিষ্ক্রিয়</td>
-        </tr>`;
+      const isInactiveM=empInactiveThisMonth(emp,my,mm);
+      if(isInactiveM){
+        mRows+=`<tr style="opacity:.3"><td>${BN_MONTHS_FULL[mm-1]} ${my}</td><td colspan="7" style="text-align:center;font-style:italic;color:var(--text2)">নিষ্ক্রিয়</td></tr>`;
         return;
       }
-      const {p,a,l,wd,otD:motD}=ms;
+      const msd=(my===fy&&mm===fm)?fd:1;
+      const med=(my===ty&&mm===tm)?td:daysInMonth(my,mm);
+      const ms=getEmpDateRangeStats(emp,my,mm,msd,my,mm,med);
       // ডেটা আছে কিনা চেক
       let hasData=false;
-      for(let d=1;d<=daysInMonth(my,mm);d++){
+      for(let d=msd;d<=med;d++){
         const k=dateKey(my,mm,d);
         if(allData[k]&&allData[k][emp]!=null){hasData=true;break;}
       }
       if(!hasData){
-        mRows+=`<tr style="opacity:.45">
-          <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
-          <td style="color:#3b82f6">${wd}</td>
-          <td colspan="5" style="color:var(--text2);font-style:italic;text-align:center">ডেটা নেই</td>
-        </tr>`;
-        return; // মোট থেকে বাদ
+        mRows+=`<tr style="opacity:.45"><td>${BN_MONTHS_FULL[mm-1]} ${my}</td><td style="color:#3b82f6">${ms.wd}</td><td colspan="6" style="text-align:center;font-style:italic;color:var(--text2)">ডেটা নেই</td></tr>`;
+        return;
       }
-      totalP+=p; totalA+=a; totalL+=l; totalD+=wd;
-      const pct=wd>0?Math.round(p/wd*100):0;
+      totalP+=ms.p; totalA+=ms.a; totalL+=ms.l; totalD+=ms.wd;
+      const pct=ms.wd>0?Math.round(ms.p/ms.wd*100):0;
       const bc=pct>=80?'#00c9a7':pct>=60?'#f59e0b':'#f43f5e';
+      const otHDisp=ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-';
       mRows+=`<tr>
         <td>${BN_MONTHS_FULL[mm-1]} ${my}</td>
-        <td style="color:#3b82f6">${wd}</td>
-        <td style="color:#00c9a7;font-weight:700">${p}</td>
-        <td style="color:#f43f5e;font-weight:700">${a}</td>
-        <td style="color:#f59e0b;font-weight:700">${l}</td>
+        <td style="color:#3b82f6">${ms.wd}</td>
+        <td style="color:#00c9a7;font-weight:700">${ms.p}</td>
+        <td style="color:#f43f5e;font-weight:700">${ms.a}</td>
+        <td style="color:#f59e0b;font-weight:700">${ms.l}</td>
         <td><span style="color:${bc};font-weight:700">${pct}%</span></td>
-        <td style="color:#a78bfa;font-weight:700">${motD||'-'}</td>
-        <td style="color:#c4b5fd;font-weight:700">${ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-'}</td>
+        <td style="color:#a78bfa;font-weight:700">${ms.otD||'-'}</td>
+        <td style="color:#c4b5fd;font-weight:700">${otHDisp}</td>
       </tr>`;
     });
     const totalPct=totalD>0?Math.round(totalP/totalD*100):0;
     const tc=totalPct>=80?'#00c9a7':totalPct>=60?'#f59e0b':'#f43f5e';
-    // Check if this employee has ANY data at all in the range
-    const empHasAnyData=dates.some(key=>allData[key]&&allData[key][emp]!==undefined);
-    const boxStyle=empHasAnyData?'':'opacity:.4;filter:grayscale(.6)';
-    const noDataBadge=empHasAnyData?'':'<span style="font-size:.72rem;background:#2a3f5a;color:var(--text2);padding:2px 8px;border-radius:12px;margin-left:8px;font-style:italic">ডেটা নেই</span>';
-    html+=`<div class="detail-box" style="${boxStyle}">
-      <h3>${emp} &nbsp;<span style="font-size:.8rem;font-weight:400;color:var(--text2)">#${ei+1}</span>${noDataBadge}</h3>
-      ${empHasAnyData ? `
-      <div class="dgrid">
-        <div class="dc"><div class="dn" style="color:#3b82f6">${totalD}</div><div class="dl">মোট কর্মদিবস</div></div>
-        <div class="dc"><div class="dn" style="color:#00c9a7">${totalP}</div><div class="dl">উপস্থিত</div></div>
-        <div class="dc"><div class="dn" style="color:#f43f5e">${totalA}</div><div class="dl">অনুপস্থিত</div></div>
-        <div class="dc"><div class="dn" style="color:#f59e0b">${totalL}</div><div class="dl">ছুটি</div></div>
-        <div class="dc"><div class="dn" style="color:${tc}">${totalPct}%</div><div class="dl">উপস্থিতি হার</div></div>
-      </div>
-      <div class="mb-wrap"><table class="mbt">
-        <thead><tr><th>মাস</th><th>কর্মদিবস</th><th style="color:#00c9a7">উপস্থিত</th><th style="color:#f43f5e">অনুপস্থিত</th><th style="color:#f59e0b">ছুটি</th><th>হার</th><th style="color:#a78bfa">OT দিন</th><th style="color:#c4b5fd">OT ঘণ্টা</th></tr></thead>
-        <tbody>${mRows}
-        <tr style="font-weight:700;background:var(--surface2)">
-          <td>সর্বমোট</td>
-          <td style="color:#3b82f6">${totalD}</td>
-          <td style="color:#00c9a7">${totalP}</td>
-          <td style="color:#f43f5e">${totalA}</td>
+    if(!isSingle) html+=`<h4 style="font-size:.82rem;color:var(--text2);margin:14px 0 6px;">${emp}</h4>`;
+    html+=`<div class="rpt-table-wrap"><table class="rpt-table">
+      <thead><tr>
+        <th>মাস</th><th style="color:#3b82f6">কর্মদিবস</th>
+        <th style="color:#00c9a7">উপস্থিত</th><th style="color:#f43f5e">অনুপস্থিত</th>
+        <th style="color:#f59e0b">ছুটি</th><th>হার</th>
+        <th style="color:#a78bfa">OT দিন</th><th style="color:#c4b5fd">OT ঘণ্টা</th>
+      </tr></thead>
+      <tbody>${mRows}
+        <tr style="background:var(--surface2);font-weight:700">
+          <td>মোট</td><td style="color:#3b82f6">${totalD}</td>
+          <td style="color:#00c9a7">${totalP}</td><td style="color:#f43f5e">${totalA}</td>
           <td style="color:#f59e0b">${totalL}</td>
           <td style="color:${tc}">${totalPct}%</td>
-          <td></td>
-          <td></td>
-        </tr></tbody>
-      </table></div>` : `<p style="color:var(--text2);font-style:italic;font-size:.85rem;padding:6px 0">এই সময়ের মধ্যে কোনো উপস্থিতির তথ্য পাওয়া যায়নি।</p>`}
-    </div>`;
+          <td></td><td></td>
+        </tr>
+      </tbody></table></div>`;
+  });
+
+  // ── দিনওয়ারি টেবিল (screenshot এর মতো) ──
+  months.forEach(({y:my,m:mm})=>{
+    const msd=(my===fy&&mm===fm)?fd:1;
+    const med=(my===ty&&mm===tm)?td:daysInMonth(my,mm);
+    const totalDays=daysInMonth(my,mm);
+    // header — দিনগুলো
+    let dayHdr=`<th style="position:sticky;left:0;background:var(--surface2);z-index:2;white-space:nowrap">কর্মচারী</th>`;
+    for(let d=msd;d<=med;d++){
+      const we=isWE(my,mm,d),hol=isHoliday(my,mm,d);
+      const lbl=we?'শু':hol?'🎌':String(d);
+      const col=we?'#64748b':hol?'#f59e0b':'var(--text2)';
+      dayHdr+=`<th style="min-width:28px;font-size:.65rem;color:${col};padding:4px 2px">${lbl}<br><span style="font-size:.55rem;color:var(--text2)">${d}</span></th>`;
+    }
+    dayHdr+=`<th style="color:#00c9a7;min-width:32px">উ</th><th style="color:#f43f5e;min-width:32px">অ</th><th style="color:#f59e0b;min-width:32px">ছ</th><th style="color:#a78bfa;min-width:36px">OT</th><th style="min-width:42px">%</th>`;
+
+    let dayRows='';
+    filteredEmps.forEach((emp,ei)=>{
+      const inactive=empInactiveThisMonth(emp,my,mm);
+      if(inactive){
+        dayRows+=`<tr><td style="position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;font-size:.75rem">${ei+1}. ${emp}</td><td colspan="${(med-msd+1)+5}" style="text-align:center;opacity:.35;font-style:italic;font-size:.72rem">নিষ্ক্রিয়</td></tr>`;
+        return;
+      }
+      let cells='';
+      for(let d=msd;d<=med;d++){
+        const key=dateKey(my,mm,d);
+        const we=isWE(my,mm,d),hol=isHoliday(my,mm,d);
+        const raw=(allData[key]&&allData[key][emp]!=null)?allData[key][emp]:null;
+        let txt,col;
+        if(we){ txt='শু'; col='#475569'; }
+        else if(hol){ txt='🎌'; col='#f59e0b'; }
+        else if(raw==='অ'){ txt='অ'; col='#f43f5e'; }
+        else if(raw==='ছ'){ txt='ছ'; col='#f59e0b'; }
+        else if(!empActiveOnDate(emp,key)){ txt='—'; col='#334155'; }
+        else { txt='উ'; col='#00c9a7'; }
+        cells+=`<td style="text-align:center;font-size:.7rem;color:${col};padding:3px 1px">${txt}</td>`;
+      }
+      const ms=getEmpDateRangeStats(emp,my,mm,msd,my,mm,med);
+      const pct=ms.wd>0?Math.round(ms.p/ms.wd*100):0;
+      const pc=pct>=80?'#00c9a7':pct>=60?'#f59e0b':'#f43f5e';
+      const otH=ms.otH>0?(ms.otH%1===0?ms.otH+'h':ms.otH.toFixed(1)+'h'):'-';
+      dayRows+=`<tr>
+        <td style="position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;font-size:.75rem;padding:4px 8px">${ei+1}. ${emp}</td>
+        ${cells}
+        <td style="color:#00c9a7;font-weight:700;text-align:center;font-size:.75rem">${ms.p}</td>
+        <td style="color:#f43f5e;font-weight:700;text-align:center;font-size:.75rem">${ms.a}</td>
+        <td style="color:#f59e0b;font-weight:700;text-align:center;font-size:.75rem">${ms.l}</td>
+        <td style="color:#a78bfa;font-weight:700;text-align:center;font-size:.75rem">${ms.otD||'-'}</td>
+        <td style="color:${pc};font-weight:700;text-align:center;font-size:.75rem">${pct}%</td>
+      </tr>`;
+    });
+
+    html+=`<h3 style="font-size:.85rem;color:var(--text2);margin:20px 0 8px;">📅 ${BN_MONTHS_FULL[mm-1]} ${my} — দিনওয়ারি</h3>
+    <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:16px">
+    <table style="border-collapse:collapse;width:100%;background:var(--surface)">
+      <thead><tr>${dayHdr}</tr></thead>
+      <tbody>${dayRows}</tbody>
+    </table></div>`;
   });
 
   document.getElementById('reportOut').innerHTML=html;
-  // store last report data for CSV
-  window._lastReportData={empStats,months,dates,fromLabel,toLabel,filteredEmps};
+  window._lastReportData={empStats,dates,fromLabel,toLabel,months,isSingle,filteredEmps,fy,fm,fd,ty,tm,td};
   }catch(e){console.error('genReport error:',e);showToast('⚠️ রিপোর্ট error: '+e.message);}
 }
+
 
 function exportReportCSV(){
   if(!window._lastReportData){showToast('⚠️ আগে রিপোর্ট দেখুন');return;}
@@ -1520,68 +1866,73 @@ let isAdmin = false;
 function getAdminPw(){
   return localStorage.getItem('att_admin_pw') || DEFAULT_ADMIN_PW;
 }
-function tryLogin(){
-  const pw = document.getElementById('pwInput').value;
-  if(pw === getAdminPw()){
-    isAdmin = true;
-    sessionStorage.setItem('att_session','admin');
-    document.getElementById('loginOverlay').style.display='none';
+function startApp(){
+  showToast('⏳ ডেটা লোড হচ্ছে...');
+  fbLoad(()=>{
+    initUI();
+    // Firebase ডেটা দিয়ে monthly table রেন্ডার করো
+    renderMonthly();
     applyAuthUI();
-    document.getElementById('pwError').textContent='';
+    // Realtime sync — নতুন ডেটা এলে UI আপডেট হবে
+    fbListen();
+  });
+}
+function tryLogin(){
+  const pwEl=document.getElementById('pwInput');
+  const errEl=document.getElementById('pwError');
+  const pw=pwEl?pwEl.value:'';
+  if(pw===getAdminPw()){
+    isAdmin=true;
+    sessionStorage.setItem('att_session','admin');
+    document.getElementById('loginOverlay').classList.remove('show');
+    if(errEl) errEl.textContent='';
+    showToast('✅ Admin লগইন সফল — isAdmin='+isAdmin);
+    startApp();
   } else {
-    document.getElementById('pwError').textContent='❌ পাসওয়ার্ড ভুল!';
-    document.getElementById('pwInput').value='';
+    if(errEl) errEl.textContent='❌ পাসওয়ার্ড ভুল!';
+    if(pwEl) pwEl.value='';
   }
 }
+
 function enterViewer(){
-  isAdmin = false;
+  isAdmin=false;
   sessionStorage.setItem('att_session','viewer');
-  document.getElementById('loginOverlay').style.display='none';
-  applyAuthUI();
+  
+  document.getElementById('loginOverlay').classList.remove('show');
+  startApp();
 }
+
 function applyAuthUI(){
   const toolbar=document.querySelector('.toolbar');
-  if(!isAdmin){
-    // CSS দিয়ে পুরো অ্যাপ read-only
-    document.body.classList.add('viewer-mode');
-    // Viewer badge
-    if(!document.getElementById('viewerBadge')){
-      const badge=document.createElement('span');
-      badge.id='viewerBadge';
-      badge.textContent='👁️ Viewer Mode';
-      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid #fbbf24;border-radius:8px;';
-      toolbar.prepend(badge);
-    }
-    // Logout button (always clickable)
-    if(!document.getElementById('logoutBtn')){
-      const lb=document.createElement('button');
-      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
-      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
-      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
-      toolbar.prepend(lb);
-    }
+  if(!toolbar) return;
+  // আগের badge সরাও
+  ['adminBadge','viewerBadge','logoutBtn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.remove();
+  });
+  if(isAdmin){
+    const badge=document.createElement('span');
+    badge.id='adminBadge';
+    badge.textContent='🔐 Admin';
+    badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:8px;cursor:pointer';
+    badge.onclick=()=>document.getElementById('changePwModal').classList.add('show');
+    toolbar.prepend(badge);
   } else {
-    document.body.classList.remove('viewer-mode');
-    // Admin badge
-    if(!document.getElementById('adminBadge')){
-      const badge=document.createElement('span');
-      badge.id='adminBadge';
-      badge.textContent='🔐 Admin';
-      badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid #3b82f6;border-radius:8px;cursor:pointer';
-      badge.title='পাসওয়ার্ড পরিবর্তন করুন';
-      badge.onclick=()=>document.getElementById('changePwModal').classList.add('show');
-      toolbar.prepend(badge);
-    }
-    // Logout button
-    if(!document.getElementById('logoutBtn')){
-      const lb=document.createElement('button');
-      lb.id='logoutBtn'; lb.className='btn btn-secondary logout-btn';
-      lb.style.fontSize='.75rem'; lb.textContent='🚪 লগআউট';
-      lb.onclick=()=>{sessionStorage.removeItem('att_session');location.reload();};
-      toolbar.prepend(lb);
-    }
+    const badge=document.createElement('span');
+    badge.id='viewerBadge';
+    badge.textContent='👁️ Viewer';
+    badge.style.cssText='font-size:.72rem;padding:3px 10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid #fbbf24;border-radius:8px;';
+    toolbar.prepend(badge);
   }
+  const lb=document.createElement('button');
+  lb.id='logoutBtn';
+  lb.className='btn btn-secondary logout-btn';
+  lb.style.fontSize='.75rem';
+  lb.textContent='🚪 লগআউট';
+  lb.onclick=()=>{ sessionStorage.removeItem('att_session'); location.reload(); };
+  toolbar.prepend(lb);
 }
+
 function doChangePw(){
   const old=document.getElementById('oldPw').value;
   const n1=document.getElementById('newPw').value;
@@ -1598,37 +1949,36 @@ function doChangePw(){
 }
 function checkAuth(){
   const sess=sessionStorage.getItem('att_session');
-  if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
-  else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').style.display='none';applyAuthUI();}
-  else{document.getElementById('loginOverlay').style.display='flex';}
+  if(sess==='admin'){isAdmin=true;document.getElementById('loginOverlay').classList.remove('show');applyAuthUI();}
+  else if(sess==='viewer'){isAdmin=false;document.getElementById('loginOverlay').classList.remove('show');applyAuthUI();}
+  else{document.getElementById('loginOverlay').classList.add('show');}
 }
 
 window.onload=function(){
-  document.getElementById('loginOverlay').style.display='none';
-  
-  // আগেই session check করে body class লাগাও (toolbar render হওয়ার আগেই)
   const sess=sessionStorage.getItem('att_session');
-  if(sess==='viewer') document.body.classList.add('viewer-mode');
-  
-  // Firebase থেকে লোড + UI init
-  fbLoad(()=>{
-    initUI();
-    setTimeout(fbListen, 2000);
-    // init শেষে auth UI apply করো (toolbar এখন আছে)
-    checkAuth();
-  });
+  if(sess==='admin'){
+    isAdmin=true;
+    document.getElementById('loginOverlay').classList.remove('show');
+    startApp();
+  } else if(sess==='viewer'){
+    isAdmin=false;
+    document.getElementById('loginOverlay').classList.remove('show');
+    startApp(); // startApp এর পরে applyAuthUI তে viewer-mode লাগবে
+  } else {
+    isAdmin=false;
+    document.getElementById('loginOverlay').classList.add('show');
+  }
 };
 </script>
-<!-- Firebase scripts loaded last so DOM is ready -->
+
+
+<!-- Firebase — সবার শেষে লোড হবে -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script>
-  // Firebase scripts loaded — now safe to init
-  initFirebase();
-</script>
+<script>initFirebase();</script>
 
 <!-- Login Overlay -->
-<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,16,25,.97);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+<div id="loginOverlay">
   <div style="background:#162032;border:1px solid #2a3f5a;border-radius:16px;padding:36px 40px;min-width:300px;text-align:center">
     <div style="font-size:2rem;margin-bottom:8px">🔐</div>
     <h2 style="color:#e2e8f0;font-size:1.1rem;margin-bottom:4px;font-family:'Hind Siliguri',sans-serif">উপস্থিতি রেজিস্টার</h2>
